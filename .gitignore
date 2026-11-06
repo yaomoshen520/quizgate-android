@@ -1,0 +1,17 @@
+# Gradle 本机状态，任何时候都不进版本库。
+.gradle/
+build/
+.kotlin/
+local.properties
+*.iml
+.idea/
+/captures
+.externalNativeBuild
+.cxx
+
+# 自测截图与临时产物。
+/tmp/
+
+# 注意 app/libs 里的 protobuf-javalite jar 与 app/src/main/java-gen 里的 protoc 产物是要入库的：
+# 构建机离线，gradle 缓存里没有 protobuf 插件；而 wire 兼容性靠两端 jar 版本逐位对齐，
+# 少了 jar 不是编译失败，是运行时对不上。这两处别写成忽略规则。

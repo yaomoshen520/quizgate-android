@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">学习闸门</string>
+    <string name="app_subtitle">玩够时间，先答一道题</string>
+    <!-- 联网之后这句就不能再写了：闸门事件确实会离开这台手机。 -->
+    <string name="app_footer">0.1-spike · 时长与题库留在本机，闸门掉线记录会上报到家长的服务端</string>
+
+    <!-- 这个字符串会原样出现在系统"开启无障碍"那一屏，是家长看到的服务范围声明，
+         所以联网上报这件事必须写在这里，而不是只写在首页某张卡片里。 -->
+    <string name="accessibility_description">用于统计游戏和短视频应用的连续使用时长，到点后弹出学科题目。题库和时长记录保存在本机；闸门被关掉、被清理等状态会作为一条记录上报到家长的服务端，用于让家长知道闸门还在不在。</string>
+
+    <!-- 首页：主卡默认文案，运行时由 render() 覆盖 -->
+    <string name="home_idle_state">空闲中</string>
+    <string name="home_idle_title">现在不在计时</string>
+    <string name="home_idle_body">打开下面这些应用才会开始计时；不在这些应用里的时间不算。</string>
+    <string name="home_service_off_state">守护没启动</string>
+    <string name="home_service_off_title">计时还没开始</string>
+    <string name="home_service_off_body">下面「看时长」那项没开启，时长不会累计，也不会出题。</string>
+    <string name="home_permission_title">能不能正常工作</string>
+    <string name="home_stats_title">抢屏记录</string>
+    <string name="home_stats_empty">还没跑过自检。展开下面的实验台，按「抢屏自检 10 轮」。</string>
+
+    <string name="chip_ok">已开启</string>
+    <string name="chip_bad">未开启</string>
+    <string name="home_perm_accessibility">看时长（无障碍服务）</string>
+    <string name="home_perm_overlay">答题页能盖住屏幕（悬浮窗）</string>
+    <string name="home_perm_notification">闸门掉线时能在通知栏看到</string>
+    <string name="fix_accessibility">去开启</string>
+    <string name="fix_overlay">去开启</string>
+    <string name="fix_notification">去开启通知</string>
+    <string name="console_chevron_closed">实验台 · 长按标题展开</string>
+    <string name="console_chevron_open">实验台 · 长按标题收起</string>
+
+    <string name="stat_placeholder">—</string>
+    <string name="stat_success_label">抢屏成功</string>
+    <string name="stat_average_label">平均延迟</string>
+    <string name="stat_worst_label">最慢一次</string>
+
+    <!-- 答题页 -->
+    <string name="quiz_header">「%1$s」已经玩了够久啦。\n答对一道题就能继续；答错先看解析，再做一道同类题。</string>
+    <string name="quiz_header_generic">已经玩了够久啦。\n答对一道题就能继续；答错先看解析，再做一道同类题。</string>
+    <string name="quiz_variant">看懂了，换一道同类题</string>
+    <string name="quiz_success_title">答对啦！</string>
+    <string name="quiz_success_body">现在可以回去继续玩了</string>
+    <string name="quiz_wrong">不对，再想想。</string>
+
+    <!-- 实验台：改了会让闸门行为变化，所以缩在收起区里、灰底小字 -->
+    <string name="console_title">实验台</string>
+    <string name="console_body">这些是给家长调试用的开关，随便改会让抢屏失效，小朋友不用碰。</string>
+    <string name="toggle_threshold">阈值切换</string>
+    <string name="run_self_test">抢屏自检 10 轮</string>
+    <string name="refresh">刷新状态与日志</string>
+    <string name="switch_mode">抢屏方式切换</string>
+    <string name="control_group">对照组：前台直接打开答题页</string>
+
+    <!-- 看门狗常驻通知：孩子看得见的那一条，所以只说状态，不教他怎么关 -->
+    <string name="watchdog_channel">闸门状态</string>
+    <string name="watchdog_ok">闸门正常，会按时提醒你答题</string>
+    <string name="watchdog_accessibility_off">闸门已掉线：看时长的服务被关了</string>
+    <string name="watchdog_overlay_off">闸门已掉线：答题页盖不住屏幕</string>
+
+    <!-- 闸门事件台账 -->
+    <string name="gate_events_title">闸门掉线记录</string>
+    <string name="gate_events_empty">到目前为止闸门一直正常。</string>
+
+    <!-- 绑定码：家长认领这台设备的唯一入口，所以放在首页正面而不是实验台里 -->
+    <string name="link_title">让家长和这台设备对上</string>
+    <string name="link_code_placeholder">— — — — — —</string>
+    <string name="link_body">在家长后台点「认领设备」，输入上面这六个字符，这台手机的闸门记录就会出现在你名下。没认领之前记录只留在这台手机上。</string>
+
+    <!-- 实验台：联网相关 -->
+    <string name="console_server_hint">服务端地址，例如 http://192.168.1.76:8080</string>
+    <string name="console_save_server">保存服务端地址</string>
+    <string name="console_report_now">立刻上报一次</string>
+    <string name="console_toggle_follow">跟随服务端阈值</string>
+    <string name="console_toggle_reporting">允许联网上报</string>
+
+</resources>

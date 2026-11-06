@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 答错时横向抖一下：位移按百分比给，不同分辨率的观感一致；结束后视图自己回到原位 -->
+<translate xmlns:android="http://schemas.android.com/apk/res/android"
+    android:duration="70"
+    android:fromXDelta="-2%"
+    android:toXDelta="2%"
+    android:interpolator="@android:anim/linear_interpolator"
+    android:repeatCount="3"
+    android:repeatMode="reverse" />

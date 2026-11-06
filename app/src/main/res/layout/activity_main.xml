@@ -1,0 +1,547 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clipToPadding="false"
+    android:scrollbars="none">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingLeft="@dimen/space_4"
+        android:paddingTop="@dimen/space_6"
+        android:paddingRight="@dimen/space_4"
+        android:paddingBottom="@dimen/space_8">
+
+        <!-- 页头：长按这块进实验台 -->
+        <LinearLayout
+            android:id="@+id/titleBlock"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:longClickable="true"
+            android:orientation="horizontal"
+            android:paddingTop="@dimen/space_2"
+            android:paddingBottom="@dimen/space_2">
+
+            <FrameLayout
+                android:layout_width="46dp"
+                android:layout_height="46dp"
+                android:background="@drawable/bg_app_mark">
+
+                <ImageView
+                    android:layout_width="@dimen/icon_app"
+                    android:layout_height="@dimen/icon_app"
+                    android:layout_gravity="center"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_app_mark" />
+            </FrameLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/space_3"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/Text.SectionTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/app_name" />
+
+                <TextView
+                    style="@style/Text.Caption"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="@string/app_subtitle" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/consoleChevron"
+                style="@style/Text.Caption"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/console_chevron_closed" />
+        </LinearLayout>
+
+        <!-- 状态主卡：孩子只需要看懂这一块 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_2"
+            android:background="@drawable/bg_hero_card"
+            android:orientation="vertical"
+            android:padding="@dimen/space_6">
+
+            <TextView
+                android:id="@+id/heroKicker"
+                style="@style/Text.Chip.Neutral"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/home_idle_state" />
+
+            <TextView
+                android:id="@+id/statusText"
+                style="@style/Text.Hero"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_3"
+                android:text="@string/home_idle_title" />
+
+            <TextView
+                android:id="@+id/heroBody"
+                style="@style/Text.Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_2"
+                android:text="@string/home_idle_body" />
+
+            <LinearLayout
+                android:id="@+id/progressTrack"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/progress_height"
+                android:layout_marginTop="@dimen/space_4"
+                android:background="@drawable/bg_progress_track"
+                android:orientation="horizontal">
+
+                <View
+                    android:id="@+id/progressFill"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="0"
+                    android:background="@drawable/bg_progress_fill" />
+
+                <View
+                    android:id="@+id/progressGap"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/progressLabel"
+                style="@style/Text.Caption"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_2" />
+        </LinearLayout>
+
+        <!-- 权限：缺哪一项在这里补齐，去的是系统设置页，改不了闸门逻辑 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_4"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="@dimen/space_6">
+
+            <TextView
+                style="@style/Text.CardTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/home_permission_title" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_3"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    style="@style/Text.Body"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/home_perm_accessibility" />
+
+                <TextView
+                    android:id="@+id/accessibilityChip"
+                    style="@style/Text.Chip.Ok"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/chip_ok" />
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/openAccessibilityButton"
+                style="@style/Button.Ghost"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_2"
+                android:text="@string/fix_accessibility" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="@dimen/space_4"
+                android:layout_marginBottom="@dimen/space_4"
+                android:background="@color/card_stroke" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    style="@style/Text.Body"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/home_perm_overlay" />
+
+                <TextView
+                    android:id="@+id/overlayChip"
+                    style="@style/Text.Chip.Ok"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/chip_ok" />
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/openOverlayButton"
+                style="@style/Button.Ghost"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_2"
+                android:text="@string/fix_overlay" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="@dimen/space_4"
+                android:layout_marginBottom="@dimen/space_4"
+                android:background="@color/card_stroke" />
+
+            <!-- 通知不是抢屏的前提，但它掉了家长就少一条眼睛，所以单独列出来 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    style="@style/Text.Body"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/home_perm_notification" />
+
+                <TextView
+                    android:id="@+id/notificationChip"
+                    style="@style/Text.Chip.Ok"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/chip_ok" />
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/openNotificationButton"
+                style="@style/Button.Ghost"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_2"
+                android:text="@string/fix_notification" />
+        </LinearLayout>
+
+        <!-- 闸门掉线记录：家长最想知道的一条——不是"今天玩了多久"，是"闸门有没有被人动过" -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_4"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="@dimen/space_6">
+
+            <TextView
+                style="@style/Text.CardTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/gate_events_title" />
+
+            <TextView
+                android:id="@+id/gateEventsText"
+                style="@style/Text.Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_3"
+                android:lineSpacingExtra="3dp"
+                android:text="@string/gate_events_empty" />
+        </LinearLayout>
+
+        <!-- 绑定码：这台设备属于哪个家长，只靠这六个字符建立第一次联系。
+             它必须出现在首页正面上，因为家长站在孩子手机前的那一次机会就是现在。 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_4"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="@dimen/space_6">
+
+            <TextView
+                style="@style/Text.CardTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/link_title" />
+
+            <TextView
+                android:id="@+id/bindCodeText"
+                style="@style/Text.Hero"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_3"
+                android:letterSpacing="0.18"
+                android:text="@string/link_code_placeholder" />
+
+            <TextView
+                style="@style/Text.Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_2"
+                android:text="@string/link_body" />
+
+            <TextView
+                android:id="@+id/linkStatusText"
+                style="@style/Text.Caption"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_2" />
+        </LinearLayout>
+
+        <!-- 抢屏记录：家长看得懂的三个数 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_4"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="@dimen/space_6">
+
+            <TextView
+                style="@style/Text.CardTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/home_stats_title" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_3"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_stat"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="@dimen/space_3">
+
+                    <TextView
+                        android:id="@+id/statSuccess"
+                        style="@style/Text.StatValue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/stat_placeholder" />
+
+                    <TextView
+                        style="@style/Text.Caption"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="@string/stat_success_label" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/space_2"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_stat"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="@dimen/space_3">
+
+                    <TextView
+                        android:id="@+id/statAverage"
+                        style="@style/Text.StatValue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/stat_placeholder" />
+
+                    <TextView
+                        style="@style/Text.Caption"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="@string/stat_average_label" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/space_2"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_stat"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="@dimen/space_3">
+
+                    <TextView
+                        android:id="@+id/statWorst"
+                        style="@style/Text.StatValue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/stat_placeholder" />
+
+                    <TextView
+                        style="@style/Text.Caption"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="@string/stat_worst_label" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/statsNote"
+                style="@style/Text.Caption"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_3"
+                android:text="@string/home_stats_empty" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/versionText"
+            style="@style/Text.Caption"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_6"
+            android:gravity="center"
+            android:text="@string/app_footer" />
+
+        <!-- 实验台：默认收起，长按页头展开。里面全是会改变闸门行为的开关。 -->
+        <LinearLayout
+            android:id="@+id/consolePanel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_3"
+            android:background="@drawable/bg_console_panel"
+            android:orientation="vertical"
+            android:padding="@dimen/space_4"
+            android:visibility="gone">
+
+            <TextView
+                style="@style/Text.CardTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/console_title" />
+
+            <TextView
+                style="@style/Text.Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_1"
+                android:text="@string/console_body" />
+
+            <Button
+                android:id="@+id/toggleThresholdButton"
+                style="@style/Button.Console"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_3"
+                android:text="@string/toggle_threshold" />
+
+            <Button
+                android:id="@+id/modeButton"
+                style="@style/Button.Console"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_2"
+                android:text="@string/switch_mode" />
+
+            <Button
+                android:id="@+id/selfTestButton"
+                style="@style/Button.Console"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_2"
+                android:text="@string/run_self_test" />
+
+            <Button
+                android:id="@+id/refreshButton"
+                style="@style/Button.Console"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_2"
+                android:text="@string/refresh" />
+
+            <Button
+                android:id="@+id/controlButton"
+                style="@style/Button.Console"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_2"
+                android:text="@string/control_group" />
+
+            <EditText
+                android:id="@+id/serverUrlInput"
+                style="@style/Text.Input"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_3"
+                android:hint="@string/console_server_hint"
+                android:importantForAutofill="no" />
+
+            <Button
+                android:id="@+id/saveServerButton"
+                style="@style/Button.Console"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_2"
+                android:text="@string/console_save_server" />
+
+            <Button
+                android:id="@+id/reportNowButton"
+                style="@style/Button.Console"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_2"
+                android:text="@string/console_report_now" />
+
+            <Button
+                android:id="@+id/toggleFollowButton"
+                style="@style/Button.Console"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_2"
+                android:text="@string/console_toggle_follow" />
+
+            <Button
+                android:id="@+id/toggleReportingButton"
+                style="@style/Button.Console"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_2"
+                android:text="@string/console_toggle_reporting" />
+
+            <TextView
+                android:id="@+id/logText"
+                style="@style/Text.Mono"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_3"
+                android:background="@drawable/bg_stat"
+                android:padding="@dimen/space_3" />
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

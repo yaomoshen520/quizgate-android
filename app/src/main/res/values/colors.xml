@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      孩子端这一套是"同色系、不同明度"的另一档：家长后台用 #3056D3（沉稳、管理界面），
+      孩子端用 #4C6EF5（明快、给小朋友看）。两边都往同一个蓝家族靠，但不硬做成同一个色值。
+      旧的名字（brand / brand_deep / ink …）全部保留成别名，已有的布局和代码不用一起改。
+    -->
+
+    <!-- 品牌色阶 -->
+    <color name="brand_050">#F4F7FF</color>
+    <color name="brand_100">#EDF2FF</color>
+    <color name="brand_200">#DCE5FF</color>
+    <color name="brand_300">#B9C6F5</color>
+    <color name="brand_400">#7A96F0</color>
+    <color name="brand_500">#4C6EF5</color>
+    <color name="brand_600">#3B5BDB</color>
+    <color name="brand_700">#2B48A8</color>
+
+    <color name="brand">@color/brand_500</color>
+    <color name="brand_deep">@color/brand_600</color>
+    <color name="brand_soft">@color/brand_100</color>
+
+    <!-- 文字 -->
+    <color name="ink">#1C1E2A</color>
+    <color name="ink_soft">#5B6178</color>
+    <color name="ink_faint">#8A90A2</color>
+    <color name="ink_on_brand">#FFFFFF</color>
+    <!-- 只用在深蓝色块上，且不小于 15sp：和 brand_600/700 的对比度实测约 5.5:1 / 7.3:1 -->
+    <color name="ink_on_brand_soft">#E8EEFF</color>
+
+    <!-- 面 -->
+    <color name="page_top">#EEF2FF</color>
+    <color name="page_bottom">#FFFFFF</color>
+    <color name="card">#FFFFFF</color>
+    <color name="card_stroke">#E6EAF6</color>
+    <color name="surface_sunken">#F4F6FB</color>
+
+    <!-- 语义色：在岗 / 要注意 / 不在岗。底色够浅，配 ink 正文能过 4.5:1。 -->
+    <color name="ok">#1D7A46</color>
+    <color name="ok_bg">#E7F6EC</color>
+    <color name="ok_stroke">#A9DDBB</color>
+    <color name="warn">#9A5B0A</color>
+    <color name="warn_bg">#FFF4E0</color>
+    <color name="warn_stroke">#F0D29A</color>
+    <color name="danger">#B3261E</color>
+    <color name="danger_bg">#FDECEA</color>
+    <color name="danger_stroke">#F0B4AC</color>
+
+    <!-- 答题页 -->
+    <color name="option_stroke">#DFE4F1</color>
+    <color name="option_pressed">#F4F7FF</color>
+    <color name="option_pressed_stroke">@color/brand_300</color>
+    <color name="wrong_bg">#FDECEA</color>
+    <color name="wrong_stroke">#F0B4AC</color>
+    <color name="note_bg">#FFF6E5</color>
+    <color name="note_stroke">#F2D9A6</color>
+    <color name="note_ink">#7A5230</color>
+
+    <!-- 答对确认层：整屏铺满、几乎不透明，把题目彻底收干净，只留"答对了才放行"这一句 -->
+    <color name="scrim_success_top">#FFFFFFFF</color>
+    <color name="scrim_success_bottom">#FFF2F9F4</color>
+
+    <!-- 启动图标：背景渐变 + 白色盾牌 + 深蓝表盘 -->
+    <color name="icon_bg_top">#5C7CFA</color>
+    <color name="icon_bg_bottom">#2B48A8</color>
+    <color name="icon_mark">#FFFFFF</color>
+    <color name="icon_dial">#2B48A8</color>
+</resources>

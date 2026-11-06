@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 答对后的整屏收场：淡淡的绿，和「答错」的琥珀明确分开。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <gradient
+        android:angle="270"
+        android:startColor="@color/scrim_success_top"
+        android:endColor="@color/scrim_success_bottom" />
+</shape>

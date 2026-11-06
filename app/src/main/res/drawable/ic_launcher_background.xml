@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 自适应图标背景层：深蓝斜向渐变，圆角由 launcher 的 mask 裁切，这里不用自己留边 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <gradient
+        android:angle="315"
+        android:startColor="@color/icon_bg_top"
+        android:endColor="@color/icon_bg_bottom" />
+</shape>

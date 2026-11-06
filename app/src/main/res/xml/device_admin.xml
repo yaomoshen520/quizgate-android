@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 空策略集：本 spike 只要拿到 Device Owner 身份做可行性判定，不申请任何管控能力。 -->
+<device-admin xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-policies />
+</device-admin>

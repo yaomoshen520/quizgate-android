@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!--
+      工程没有 AppCompat，主题只能从系统 DeviceDefault 往下派生。
+      名字带点号 = 隐式继承上一个，所以 Seize 自动拿到基础主题的全部属性。
+    -->
+    <style name="QuizGateTheme" parent="@android:style/Theme.DeviceDefault.Light.NoActionBar">
+        <item name="android:windowBackground">@drawable/bg_screen</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@color/page_bottom</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:colorAccent">@color/brand_500</item>
+    </style>
+
+    <!-- 抢屏页：不留状态栏，背景铺满，别让人看出底下是什么应用 -->
+    <style name="QuizGateTheme.Seize" parent="@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen">
+        <item name="android:windowBackground">@drawable/bg_screen</item>
+        <item name="android:colorAccent">@color/brand_500</item>
+    </style>
+
+</resources>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 单色层：launcher 会整体着色，所以填充块会糊成一片，这里一律只用描边 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="@color/icon_mark"
+        android:strokeWidth="4"
+        android:strokeLineJoin="round"
+        android:pathData="M54,24 L78,32.5 L78,55 C78,68.5 68,78 54,82.5 C40,78 30,68.5 30,55 L30,32.5 Z" />
+
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="@color/icon_mark"
+        android:strokeWidth="3.4"
+        android:strokeLineCap="round"
+        android:pathData="M41,53 a13,13 0 1,0 26,0 a13,13 0 1,0 -26,0" />
+
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="@color/icon_mark"
+        android:strokeWidth="3.4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M54,45.2 L54,53 L59.8,56.2" />
+</vector>

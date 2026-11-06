@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!--
+      这个工程没有引 AppCompat/Material，样式只能用 android: 前缀的属性，
+      并且每条都显式写 parent=""，不然带点号的名字会隐式继承同名前缀。
+    -->
+
+    <!-- 文字 -->
+    <style name="Text.Hero" parent="">
+        <item name="android:textSize">@dimen/text_hero</item>
+        <item name="android:textColor">@color/ink</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">-0.01</item>
+        <item name="android:lineSpacingExtra">2dp</item>
+    </style>
+
+    <style name="Text.SectionTitle" parent="">
+        <item name="android:textSize">@dimen/text_title</item>
+        <item name="android:textColor">@color/ink</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">-0.006</item>
+    </style>
+
+    <style name="Text.CardTitle" parent="">
+        <item name="android:textSize">@dimen/text_control</item>
+        <item name="android:textColor">@color/ink</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="Text.Body" parent="">
+        <item name="android:textSize">@dimen/text_body</item>
+        <item name="android:textColor">@color/ink_soft</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:lineSpacingExtra">3dp</item>
+    </style>
+
+    <style name="Text.Caption" parent="">
+        <item name="android:textSize">@dimen/text_label</item>
+        <item name="android:textColor">@color/ink_faint</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+
+    <!-- 大号计数：只放数字，等宽数字才不会因为数字变化而抖动 -->
+    <style name="Text.StatValue" parent="">
+        <item name="android:textSize">@dimen/text_title</item>
+        <item name="android:textColor">@color/ink</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- 实验台里的日志/技术信息，才用等宽 -->
+    <style name="Text.Mono" parent="">
+        <item name="android:textSize">@dimen/text_caption</item>
+        <item name="android:textColor">@color/ink_soft</item>
+        <item name="android:typeface">monospace</item>
+        <item name="android:lineSpacingExtra">2dp</item>
+    </style>
+
+    <!-- 按钮 -->
+    <style name="Button.Primary" parent="@android:style/Widget.DeviceDefault.Button">
+        <item name="android:background">@drawable/bg_primary_button</item>
+        <item name="android:textColor">@color/ink_on_brand</item>
+        <item name="android:textSize">@dimen/text_control</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:minHeight">@dimen/ctl_height_lg</item>
+        <item name="android:stateListAnimator">@null</item>
+        <item name="android:paddingLeft">@dimen/space_6</item>
+        <item name="android:paddingRight">@dimen/space_6</item>
+    </style>
+
+    <style name="Button.Ghost" parent="@android:style/Widget.DeviceDefault.Button">
+        <item name="android:background">@drawable/bg_ghost_button</item>
+        <item name="android:textColor">@color/brand_600</item>
+        <item name="android:textSize">@dimen/text_body</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:minHeight">@dimen/ctl_height</item>
+        <item name="android:stateListAnimator">@null</item>
+        <item name="android:paddingLeft">@dimen/space_4</item>
+        <item name="android:paddingRight">@dimen/space_4</item>
+    </style>
+
+    <!-- 实验台：和正常界面明显不是一个层级的东西，灰色小字，避免小朋友误按 -->
+    <style name="Button.Console" parent="@android:style/Widget.DeviceDefault.Button">
+        <item name="android:background">@drawable/bg_console_button</item>
+        <item name="android:textColor">@color/ink_soft</item>
+        <item name="android:textSize">@dimen/text_label</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:minHeight">44dp</item>
+        <item name="android:stateListAnimator">@null</item>
+        <item name="android:gravity">center_vertical|start</item>
+        <item name="android:paddingLeft">@dimen/space_3</item>
+        <item name="android:paddingRight">@dimen/space_3</item>
+    </style>
+
+    <!-- 状态标签 -->
+    <style name="Text.Chip" parent="">
+        <item name="android:textSize">@dimen/text_label</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:gravity">center</item>
+        <item name="android:minHeight">@dimen/chip_height</item>
+        <item name="android:paddingLeft">@dimen/space_3</item>
+        <item name="android:paddingRight">@dimen/space_3</item>
+    </style>
+
+    <style name="Text.Chip.Neutral" parent="Text.Chip">
+        <item name="android:textColor">@color/brand_600</item>
+        <item name="android:background">@drawable/bg_chip_neutral</item>
+    </style>
+
+    <style name="Text.Chip.Ok" parent="Text.Chip">
+        <item name="android:textColor">@color/ok</item>
+        <item name="android:background">@drawable/bg_chip_ok</item>
+    </style>
+
+    <style name="Text.Chip.Bad" parent="Text.Chip">
+        <item name="android:textColor">@color/danger</item>
+        <item name="android:background">@drawable/bg_chip_bad</item>
+    </style>
+
+    <!-- 实验台里唯一需要打字的地方：服务端地址。复用 bg_stat 那层凹陷底，不另起一套输入框视觉。 -->
+    <style name="Text.Input" parent="">
+        <item name="android:textSize">@dimen/text_body</item>
+        <item name="android:textColor">@color/ink</item>
+        <item name="android:background">@drawable/bg_stat</item>
+        <item name="android:paddingLeft">@dimen/space_3</item>
+        <item name="android:paddingRight">@dimen/space_3</item>
+        <item name="android:minHeight">@dimen/ctl_height</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:inputType">textUri</item>
+        <item name="android:maxLines">1</item>
+    </style>
+
+</resources>
