@@ -9,6 +9,7 @@ import android.view.WindowManager
 import com.quizgate.spike.service.GateAccessibilityService
 import com.quizgate.spike.util.SpikeLog
 import com.quizgate.spike.util.TriggerLedger
+import com.quizgate.spike.net.QuestionSource
 
 class QuizActivity : Activity() {
 
@@ -38,7 +39,7 @@ class QuizActivity : Activity() {
             }
         }
 
-        val quizPanel = QuizPanel(this) {
+        val quizPanel = QuizPanel(this, QuestionSource.create(applicationContext, packageName == "self-test")) {
             GateAccessibilityService.instance?.onQuizCleared()
             finish()
         }
@@ -51,7 +52,7 @@ class QuizActivity : Activity() {
             View.SYSTEM_UI_FLAG_LAYOUT_STABLE or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
         setContentView(quizPanel.view)
 
-        if (round >= 0) {
+        if (intent.getBooleanExtra(EXTRA_SELF_TEST, false)) {
             quizPanel.view.postDelayed({
                 SpikeLog.record("自检轮结束，答题页自动关闭")
                 finish()
@@ -63,10 +64,17 @@ class QuizActivity : Activity() {
         panel?.onBackPressed()
     }
 
+    override fun onDestroy() {
+        panel?.close()
+        panel = null
+        super.onDestroy()
+    }
+
     companion object {
         const val EXTRA_TRIGGER_AT = "trigger_at"
         const val EXTRA_PACKAGE = "package_under_quota"
         const val EXTRA_ROUND = "round"
+        const val EXTRA_SELF_TEST = "self_test"
 
         private const val SELF_TEST_DISMISS_MS = 5_000L
     }

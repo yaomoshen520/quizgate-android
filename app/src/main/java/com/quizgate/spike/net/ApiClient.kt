@@ -5,7 +5,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 /**
- * 上报通道唯一的一条网络出口。只走 protobuf：后端没有 JSON 层，
+ * 设备端的网络出口（取题、判分、上报）。只走 protobuf：后端没有 JSON 层，
  * 这里想发 JSON 只会拿到 415，而且是在孩子把闸门弄掉之后才发现，代价太大。
  *
  * 所有失败都收敛成 [ReportUnavailable]：调用方唯一的正确反应是"这批先留着，下次再试"，

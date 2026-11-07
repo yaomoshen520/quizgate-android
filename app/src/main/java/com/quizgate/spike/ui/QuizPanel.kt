@@ -1,6 +1,8 @@
 package com.quizgate.spike.ui
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.util.TypedValue
 import android.view.ContextThemeWrapper
 import android.view.Gravity
@@ -11,11 +13,16 @@ import android.widget.Button
 import android.widget.LinearLayout
 import com.quizgate.spike.R
 import com.quizgate.spike.databinding.ActivityQuizBinding
+import com.quizgate.spike.config.SpikeSettings
+import com.quizgate.spike.monitor.UsageRecorder
+import com.quizgate.spike.net.QuestionSource
 import com.quizgate.spike.question.LocalQuestionRepository
 import com.quizgate.spike.question.Question
 import com.quizgate.spike.question.QuestionRepository
 import com.quizgate.spike.question.Subject
+import com.quizgate.spike.question.QuizSession
 import com.quizgate.spike.util.SpikeLog
+import java.util.concurrent.Executors
 
 /**
  * 答题界面本体。Activity 和悬浮窗两种宿主共用这一份，
@@ -23,7 +30,7 @@ import com.quizgate.spike.util.SpikeLog
  */
 class QuizPanel(
     context: Context,
-    private val repository: QuestionRepository = LocalQuestionRepository(),
+    private val repository: QuestionRepository = QuestionSource.create(context.applicationContext),
     private val onResolved: () -> Unit
 ) {
 
@@ -36,9 +43,20 @@ class QuizPanel(
     )
     private val density = context.resources.displayMetrics.density
     private val res = context.resources
-    private var current: Question? = null
-    private var wrongCount = 0
-    private var answered = false
+    private val handler = Handler(Looper.getMainLooper())
+    private val usage = UsageRecorder(context.applicationContext)
+    private var packageUnderQuota = ""
+    private var closed = false
+    private val session = QuizSession(repository, SpikeSettings(context).grade, worker,
+        java.util.concurrent.Executor { handler.post(it) }, ::render,
+        recordAnswer = { correct ->
+            if (packageUnderQuota != "self-test") {
+                runCatching {
+                    usage.record(System.currentTimeMillis(), packageUnderQuota,
+                        correctCount = if (correct) 1 else 0, wrongCount = if (correct) 0 else 1)
+                }.onFailure { SpikeLog.record("答题用量落盘失败：${it.message}") }
+            }
+        })
 
     val view: View
         get() = binding.root
@@ -51,6 +69,7 @@ class QuizPanel(
     }
 
     fun start(packageName: String) {
+        packageUnderQuota = packageName
         // 解析不出应用名（对照组、包已卸载）就用通用文案，别把 "control" 这种调试串露给孩子。
         val label = appLabel(packageName)
         binding.headerText.text = if (label == packageName) {
@@ -58,20 +77,51 @@ class QuizPanel(
         } else {
             res.getString(R.string.quiz_header, label)
         }
-        show(nextQuestion())
+        session.start(SUBJECTS[subjectCursor++ % SUBJECTS.size])
     }
 
     fun onBackPressed() {
         SpikeLog.record("返回键被拦下，必须先答题")
     }
 
-    private fun nextQuestion(): Question =
-        repository.next(SUBJECTS[subjectCursor++ % SUBJECTS.size], GRADE)
+    fun close() {
+        closed = true
+        session.close()
+        handler.removeCallbacksAndMessages(null)
+    }
+
+    private fun render(state: QuizSession.State) {
+        when (state) {
+            QuizSession.State.Loading -> {
+                if (binding.optionContainer.childCount == 0) binding.stemText.text = "正在准备题目…"
+                for (i in 0 until binding.optionContainer.childCount) {
+                    binding.optionContainer.getChildAt(i).isEnabled = false
+                }
+                binding.variantButton.isEnabled = false
+            }
+            is QuizSession.State.Ready -> {
+                show(state.question)
+                if (state.notice.isNotEmpty()) {
+                    binding.explanationText.text = state.notice
+                    binding.explanationText.visibility = View.VISIBLE
+                }
+            }
+            is QuizSession.State.Wrong -> {
+                binding.optionContainer.getChildAt(state.index)?.let { wrong ->
+                    wrong.setBackgroundResource(R.drawable.bg_option_wrong)
+                    wrong.startAnimation(AnimationUtils.loadAnimation(wrong.context, R.anim.shake))
+                }
+                binding.explanationText.text = "${res.getString(R.string.quiz_wrong)}${state.explanation}"
+                binding.explanationText.visibility = View.VISIBLE
+                binding.variantButton.visibility = View.VISIBLE
+                binding.variantButton.isEnabled = true
+            }
+            QuizSession.State.Correct -> showSuccess()
+        }
+    }
 
     private fun show(question: Question) {
-        answered = false
         binding.successLayer.visibility = View.GONE
-        current = question
         binding.subjectChip.text = question.subject.label
         binding.pointText.text = question.knowledgePoint
         binding.stemText.text = question.stem
@@ -81,10 +131,8 @@ class QuizPanel(
         }
         binding.explanationText.visibility = View.GONE
         binding.variantButton.visibility = View.GONE
-        binding.variantButton.setOnClickListener {
-            val question = current ?: return@setOnClickListener
-            show(repository.variant(question, GRADE))
-        }
+        binding.variantButton.isEnabled = true
+        binding.variantButton.setOnClickListener { session.variant() }
     }
 
     private fun optionButton(index: Int, option: String, total: Int) =
@@ -106,29 +154,8 @@ class QuizPanel(
                     bottomMargin = res.getDimensionPixelSize(R.dimen.space_3)
                 }
             }
-            setOnClickListener { if (!answered) answer(index) }
+            setOnClickListener { session.answer(index) }
         }
-
-    private fun answer(index: Int) {
-        val question = current ?: return
-        if (index == question.correctIndex) {
-            answered = true
-            SpikeLog.record(
-                "答对 subject=${question.subject} point=${question.knowledgePoint} 答错次数=$wrongCount"
-            )
-            showSuccess()
-            return
-        }
-        wrongCount++
-        SpikeLog.record("答错 subject=${question.subject} point=${question.knowledgePoint}")
-        binding.optionContainer.getChildAt(index)?.let { wrong ->
-            wrong.setBackgroundResource(R.drawable.bg_option_wrong)
-            wrong.startAnimation(AnimationUtils.loadAnimation(wrong.context, R.anim.shake))
-        }
-        binding.explanationText.text = "${res.getString(R.string.quiz_wrong)}${question.explanation}"
-        binding.explanationText.visibility = View.VISIBLE
-        binding.variantButton.visibility = View.VISIBLE
-    }
 
     /**
      * 答对先给一秒多确认再收场：直接 finish 的话孩子只看到屏幕闪了一下，
@@ -139,7 +166,7 @@ class QuizPanel(
         binding.successLayer.startAnimation(
             AnimationUtils.loadAnimation(binding.successLayer.context, R.anim.success_pop)
         )
-        binding.successLayer.postDelayed({ onResolved() }, SUCCESS_HOLD_MS)
+        handler.postDelayed({ if (!closed) onResolved() }, SUCCESS_HOLD_MS)
     }
 
     private fun appLabel(packageName: String): String = runCatching {
@@ -157,8 +184,8 @@ class QuizPanel(
     private companion object {
         val OPTION_MARKS = listOf("①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨")
         val SUBJECTS = LocalQuestionRepository.SUBJECTS
-        const val GRADE = 2
         const val SUCCESS_HOLD_MS = 1_200L
         var subjectCursor = 0
+        val worker = Executors.newFixedThreadPool(2)
     }
 }

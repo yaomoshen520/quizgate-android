@@ -4,11 +4,11 @@
     <string name="app_name">学习闸门</string>
     <string name="app_subtitle">玩够时间，先答一道题</string>
     <!-- 联网之后这句就不能再写了：闸门事件确实会离开这台手机。 -->
-    <string name="app_footer">0.1-spike · 时长与题库留在本机，闸门掉线记录会上报到家长的服务端</string>
+    <string name="app_footer">0.1-spike · 断网时使用本地题目，联网后向家长服务端同步用量与闸门状态</string>
 
     <!-- 这个字符串会原样出现在系统"开启无障碍"那一屏，是家长看到的服务范围声明，
          所以联网上报这件事必须写在这里，而不是只写在首页某张卡片里。 -->
-    <string name="accessibility_description">用于统计游戏和短视频应用的连续使用时长，到点后弹出学科题目。题库和时长记录保存在本机；闸门被关掉、被清理等状态会作为一条记录上报到家长的服务端，用于让家长知道闸门还在不在。</string>
+    <string name="accessibility_description">用于识别前台应用、统计连续使用时长，到点后弹出学科题目。不读取或保存界面文字。联网时向家长服务端取题、提交判分，并同步用量和闸门状态；断网时使用本地题目。</string>
 
     <!-- 首页：主卡默认文案，运行时由 render() 覆盖 -->
     <string name="home_idle_state">空闲中</string>

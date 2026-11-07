@@ -12,6 +12,7 @@ class SessionTrackerTest {
     private var wall = 1_000_000_000L
     private val store = MemorySessionStore()
     private val reports = mutableListOf<String>()
+    private val played = mutableListOf<Pair<String, Long>>()
 
     private fun newTracker(
         thresholdMs: Long = 30_000,
@@ -26,7 +27,8 @@ class SessionTrackerTest {
         monotonicMs = { mono },
         wallMs = { wall },
         store = if (persist) store else null,
-        report = { reports += it }
+        report = { reports += it },
+        recordPlayed = { pkg, ms, _ -> played += pkg to ms }
     )
 
     /** 按真实 tick 节奏推进时间；一步跨太大是被禁止的，那正是被修掉的洞。 */
@@ -246,6 +248,50 @@ class SessionTrackerTest {
 
         session.onScreenOff()
 
+        assertNull(store.loaded)
+    }
+
+    @Test
+    fun `usage follows app switches and excludes quiz time and stalled gaps`() {
+        val session = newTracker()
+        session.onWindowPackage(VIDEO)
+        session.play(10_000)
+        session.onWindowPackage(GAME)
+        session.play(20_000)
+        assertEquals(10_000L, played.filter { it.first == VIDEO }.sumOf { it.second })
+        assertEquals(20_000L, played.filter { it.first == GAME }.sumOf { it.second })
+        session.play(10_000)
+        assertEquals(30_000L, played.sumOf { it.second })
+        session.onQuizCleared()
+        mono += 60_000; wall += 60_000
+        session.onTick()
+        assertEquals(30_000L, played.sumOf { it.second })
+    }
+
+    @Test
+    fun `restoring a snapshot does not report offline time or previously recorded usage twice`() {
+        val first = newTracker()
+        first.onWindowPackage(VIDEO)
+        first.play(20_000)
+        mono += 4_000; wall += 4_000
+        val restored = newTracker()
+        restored.onTick()
+        assertEquals(20_000L, played.sumOf { it.second })
+        restored.play(2_000)
+        assertEquals(22_000L, played.sumOf { it.second })
+    }
+
+    @Test
+    fun `screen off discovered after service restore discards snapshot without reporting new usage`() {
+        val first = newTracker()
+        first.onWindowPackage(VIDEO)
+        first.play(20_000)
+        val restored = newTracker()
+        mono += 2_000; wall += 2_000
+        restored.onScreenOff(recordFinalStep = false)
+        restored.play(20_000)
+        assertEquals(0L, restored.sessionMs)
+        assertEquals(20_000L, played.sumOf { it.second })
         assertNull(store.loaded)
     }
 

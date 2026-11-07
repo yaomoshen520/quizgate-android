@@ -8,6 +8,7 @@ import android.content.IntentFilter
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.os.PowerManager
 import android.os.SystemClock
 import android.provider.Settings
 import android.view.accessibility.AccessibilityEvent
@@ -15,6 +16,7 @@ import com.quizgate.spike.config.PrefsSessionStore
 import com.quizgate.spike.config.SpikeSettings
 import com.quizgate.spike.config.TriggerMode
 import com.quizgate.spike.monitor.SessionTracker
+import com.quizgate.spike.monitor.UsageRecorder
 import com.quizgate.spike.ui.QuizActivity
 import com.quizgate.spike.ui.QuizOverlay
 import com.quizgate.spike.util.SpikeLog
@@ -29,11 +31,22 @@ class GateAccessibilityService : AccessibilityService() {
     private var tracker: SessionTracker? = null
     private var lastReportedPackage: String? = null
     private var fireCounter = 0
+    private val usage by lazy { UsageRecorder(applicationContext) }
+    private val power by lazy { getSystemService(Context.POWER_SERVICE) as PowerManager }
 
     private val ticker = object : Runnable {
         override fun run() {
             pollCommandFile()
-            tracker?.onTick()?.let { fire(it.packageUnderQuota, "quota") }
+            if (!power.isInteractive) {
+                // 服务可能在灭屏期间重绑，收不到此前的灭屏广播；恢复的快照也不能继续累计。
+                if (tracker?.foreground != null || (tracker?.sessionMs ?: 0L) > 0L) {
+                    tracker?.onScreenOff(recordFinalStep = false)
+                }
+            } else {
+                val foreground = probeForegroundPackage()
+                if (foreground != null) observePackage(foreground)
+                else tracker?.onTick()?.let { fire(it.packageUnderQuota, "quota") }
+            }
             handler.postDelayed(this, TICK_MS)
         }
     }
@@ -73,13 +86,29 @@ class GateAccessibilityService : AccessibilityService() {
         if (current.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             return
         }
-        val packageName = current.packageName?.toString()
+        observePackage(current.packageName?.toString())
+    }
+
+    private fun observePackage(packageName: String?) {
+        if (!power.isInteractive) return
         if (packageName != null && packageName != lastReportedPackage) {
             lastReportedPackage = packageName
             SpikeLog.record("前台 -> $packageName")
         }
         tracker?.onWindowPackage(packageName)?.let { fire(it.packageUnderQuota, "quota") }
     }
+
+    /** 浮窗消失或服务重绑时不保证有窗口切换事件。只读根节点包名，不遍历节点或读取控件文字。 */
+    private fun probeForegroundPackage(): String? = runCatching {
+        if (!power.isInteractive) return@runCatching null
+        val root = rootInActiveWindow ?: return@runCatching null
+        try {
+            root.packageName?.toString()
+        } finally {
+            @Suppress("DEPRECATION")
+            root.recycle()
+        }
+    }.getOrNull()
 
     override fun onInterrupt() {
         SpikeLog.record("服务被中断")
@@ -94,6 +123,10 @@ class GateAccessibilityService : AccessibilityService() {
     }
 
     fun rebuildTracker() {
+        if (Looper.myLooper() != Looper.getMainLooper()) {
+            handler.post { if (instance === this) rebuildTracker() }
+            return
+        }
         tracker = SessionTracker(
             targetPackages = settings.targetPackages,
             thresholdMs = settings.thresholdMs,
@@ -102,7 +135,11 @@ class GateAccessibilityService : AccessibilityService() {
             monotonicMs = { SystemClock.elapsedRealtime() },
             wallMs = { System.currentTimeMillis() },
             store = PrefsSessionStore(applicationContext),
-            report = { SpikeLog.record("计时：$it") }
+            report = { SpikeLog.record("计时：$it") },
+            recordPlayed = { pkg, ms, at ->
+                runCatching { usage.record(at, pkg, playedMs = ms) }
+                    .onFailure { SpikeLog.record("娱乐用量落盘失败：${it.message}") }
+            }
         )
         lastReportedPackage = null
     }
@@ -172,12 +209,13 @@ class GateAccessibilityService : AccessibilityService() {
                     SpikeLog.record("第 ${round + 1} 轮抢屏失败：悬浮窗没能铺上屏")
                     TriggerLedger.failPending(round)
                     tracker?.onFireFailed()
+                    recordInterceptionFailure(packageUnderQuota, reason)
                 }
             }
-            TriggerMode.START_ONLY -> startActivity(round, triggerAt, packageUnderQuota)
+            TriggerMode.START_ONLY -> startActivity(round, triggerAt, packageUnderQuota, reason)
             TriggerMode.HOME_START -> {
                 performGlobalAction(GLOBAL_ACTION_HOME)
-                handler.postDelayed({ startActivity(round, triggerAt, packageUnderQuota) }, HOME_SETTLE_MS)
+                handler.postDelayed({ startActivity(round, triggerAt, packageUnderQuota, reason) }, HOME_SETTLE_MS)
             }
         }
         handler.postDelayed({
@@ -185,16 +223,24 @@ class GateAccessibilityService : AccessibilityService() {
             if (failed != null) {
                 SpikeLog.record("第 ${round + 1} 轮抢屏失败：${RESUME_TIMEOUT_MS}ms 内答题页没到前台")
                 tracker?.onFireFailed()
+                recordInterceptionFailure(packageUnderQuota, reason)
             }
         }, HOME_SETTLE_MS + RESUME_TIMEOUT_MS)
     }
 
-    private fun startActivity(round: Int, triggerAt: Long, packageUnderQuota: String) {
+    private fun recordInterceptionFailure(pkg: String, reason: String) {
+        if (reason == "self-test") return
+        runCatching { usage.record(System.currentTimeMillis(), pkg, interceptionFailed = true) }
+            .onFailure { SpikeLog.record("抢屏失败用量落盘失败：${it.message}") }
+    }
+
+    private fun startActivity(round: Int, triggerAt: Long, packageUnderQuota: String, reason: String) {
         val intent = Intent(this, QuizActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
             putExtra(QuizActivity.EXTRA_TRIGGER_AT, triggerAt)
             putExtra(QuizActivity.EXTRA_PACKAGE, packageUnderQuota)
             putExtra(QuizActivity.EXTRA_ROUND, round)
+            putExtra(QuizActivity.EXTRA_SELF_TEST, reason == "self-test")
         }
         try {
             startActivity(intent)
@@ -202,6 +248,7 @@ class GateAccessibilityService : AccessibilityService() {
             SpikeLog.record("startActivity 抛异常 ${error.javaClass.simpleName}: ${error.message}")
             TriggerLedger.failPending(round)
             tracker?.onFireFailed()
+            recordInterceptionFailure(packageUnderQuota, reason)
         }
     }
 

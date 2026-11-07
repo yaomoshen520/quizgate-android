@@ -86,7 +86,7 @@ class MathQuestionGenerator(private val random: Random = Random.Default) {
             )
         } else {
             val minuend = product + offset
-            val answer = minuend - offset
+            val answer = minuend - product
             Draft(
                 stem = "$minuend − $first × $second = ?",
                 answer = answer,

@@ -135,6 +135,12 @@ class MainActivity : Activity() {
         }
         binding.toggleFollowButton.setOnClickListener {
             settings.followServerRule = !settings.followServerRule
+            if (settings.followServerRule) {
+                // Earlier heartbeats may have received this version without applying it.
+                // Advertising that version again would leave the local threshold unchanged forever.
+                identity.requestRuleRefresh()
+                reporter.tick(force = true)
+            }
             SpikeLog.record(
                 if (settings.followServerRule) {
                     "改为跟随服务端阈值，本机阈值将由家长设定覆盖"

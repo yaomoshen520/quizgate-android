@@ -14,32 +14,37 @@ import java.io.File
  * 早先这里缓存过一份内存列表，实测首页永远看不到看门狗刚写进去的那条。
  */
 class GateEventStore(private val file: File) {
+    private val lock = file.canonicalPath.intern()
 
     @Synchronized
-    fun append(atMs: Long, kind: GateEventKind, detail: String) {
+    fun append(atMs: Long, kind: GateEventKind, detail: String) = synchronized(lock) {
         val current = read()
         current += "$atMs|${kind.name}|0|${detail.replace('|', ' ')}"
         write(current.takeLast(MAX_LINES))
     }
 
     @Synchronized
-    fun recent(limit: Int): List<GateEvent> =
+    fun recent(limit: Int): List<GateEvent> = synchronized(lock) {
         read().takeLast(limit).mapNotNull { parse(it)?.event }.reversed()
+    }
 
     @Synchronized
-    fun all(): List<GateEvent> = read().mapNotNull { parse(it)?.event }
+    fun all(): List<GateEvent> = synchronized(lock) { read().mapNotNull { parse(it)?.event } }
 
     /** 还没上报出去的那些；上报通道接上之前，这里会一直堆着（上限 MAX_LINES）。 */
     @Synchronized
-    fun pending(): List<GateEvent> = read().mapNotNull(::parse)
+    fun pending(): List<GateEvent> = synchronized(lock) { read().mapNotNull(::parse)
         .filter { !it.flushed }
         .map { it.event }
+    }
 
     @Synchronized
-    fun markFlushed() {
+    fun markFlushed(sent: List<GateEvent> = pending()) = synchronized(lock) {
+        val delivered = sent.toSet()
         val rewritten = read().map { line ->
             val parts = line.split('|')
-            if (parts.size == 4 && parts[2] == "0") "${parts[0]}|${parts[1]}|1|${parts[3]}" else line
+            if (parts.size == 4 && parts[2] == "0" && parse(line)?.event in delivered)
+                "${parts[0]}|${parts[1]}|1|${parts[3]}" else line
         }
         write(rewritten)
     }

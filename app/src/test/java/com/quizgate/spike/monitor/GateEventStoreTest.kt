@@ -86,4 +86,15 @@ class GateEventStoreTest {
         assertEquals(599L, all.last().atMs)
         assertEquals(100L, all.first().atMs)
     }
+
+    @Test
+    fun `发送期间新增的告警不能被旧批次标成已发`() {
+        val file = tempFile()
+        val store = GateEventStore(file)
+        store.append(1L, GateEventKind.OVERLAY_OFF, "旧记录")
+        val sent = store.pending()
+        GateEventStore(file).append(2L, GateEventKind.ACCESSIBILITY_OFF, "新记录")
+        store.markFlushed(sent)
+        assertEquals(listOf(2L), store.pending().map { it.atMs })
+    }
 }

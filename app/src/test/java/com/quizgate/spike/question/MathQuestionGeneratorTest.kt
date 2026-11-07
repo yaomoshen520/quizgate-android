@@ -49,6 +49,33 @@ class MathQuestionGeneratorTest {
     }
 
     @Test
+    fun `both mixed operation branches match arithmetic in their stems`() {
+        val generator = MathQuestionGenerator(Random(21))
+        val addition = Regex("""(\d+) × (\d+) \+ (\d+) = \?""")
+        val subtraction = Regex("""(\d+) − (\d+) × (\d+) = \?""")
+        var additions = 0
+        var subtractions = 0
+        repeat(200) {
+            val question = generator.create(MathQuestionGenerator.POINT_TWO_STEP)
+            val plus = addition.matchEntire(question.stem)?.groupValues
+            val minus = subtraction.matchEntire(question.stem)?.groupValues
+            val expected = when {
+                plus != null -> {
+                    additions++
+                    plus[1].toInt() * plus[2].toInt() + plus[3].toInt()
+                }
+                minus != null -> {
+                    subtractions++
+                    minus[1].toInt() - minus[2].toInt() * minus[3].toInt()
+                }
+                else -> error("Unexpected stem: ${question.stem}")
+            }
+            assertEquals(question.stem, expected.toString(), question.correctAnswer)
+        }
+        assertTrue(additions > 0 && subtractions > 0)
+    }
+
+    @Test
     fun `variant on the same knowledge point is a different stem`() {
         val generator = MathQuestionGenerator(Random(3))
         val first = generator.create(MathQuestionGenerator.POINT_ADD_SUBTRACT)

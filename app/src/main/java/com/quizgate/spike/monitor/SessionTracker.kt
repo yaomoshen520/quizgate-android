@@ -18,7 +18,8 @@ class SessionTracker(
     private val monotonicMs: () -> Long,
     private val wallMs: () -> Long = monotonicMs,
     private val store: SessionStore? = null,
-    private val report: (String) -> Unit = {}
+    private val report: (String) -> Unit = {},
+    private val recordPlayed: (String, Long, Long) -> Unit = { _, _, _ -> }
 ) {
 
     data class Trigger(val packageUnderQuota: String, val accumulatedMs: Long)
@@ -83,7 +84,8 @@ class SessionTracker(
         report("抢屏失败，${FIRE_RETRY_BACKOFF_MS / 1000}s 后重试")
     }
 
-    fun onScreenOff() {
+    fun onScreenOff(recordFinalStep: Boolean = true) {
+        if (recordFinalStep) advanceTo(monotonicMs())
         reset()
     }
 
@@ -106,7 +108,7 @@ class SessionTracker(
     private fun advanceTo(now: Long) {
         val delta = now - lastAdvanceMs
         lastAdvanceMs = now
-        if (foregroundPackage == null || delta <= 0L) {
+        if (foregroundPackage == null || delta <= 0L || awaitingSinceMs != null) {
             return
         }
         if (delta > maxStepMs) {
@@ -115,6 +117,7 @@ class SessionTracker(
             return
         }
         accumulatedMs += delta
+        recordPlayed(requireNotNull(foregroundPackage), delta, wallMs())
         if (accumulatedMs - lastPersistedMs >= PERSIST_INTERVAL_MS) {
             persist()
         }
@@ -192,7 +195,9 @@ class SessionTracker(
         accumulatedMs = snapshot.accumulatedMs
         if (snapshot.bootId == bootId) {
             // 同一次开机：单调时钟可比，断档交给 maxStepMs 判定，不虚增也不白送。
-            lastAdvanceMs = snapshot.monotonicMs
+            // 快照之前的用量已经写入独立队列。恢复时不能把同一段时间再上报一次，
+            // 进程不在的那段也不是观测到的娱乐时长。
+            lastAdvanceMs = monotonicMs()
         } else {
             // 重启过或改过时间：离线期间不计入，只接回已累计的量。
             lastAdvanceMs = monotonicMs()

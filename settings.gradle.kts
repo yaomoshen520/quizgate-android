@@ -1,5 +1,10 @@
 pluginManagement {
     repositories {
+        if (System.getenv("QUIZGATE_USE_MIRROR") == "1") {
+            maven("https://maven.aliyun.com/repository/google")
+            maven("https://maven.aliyun.com/repository/gradle-plugin")
+            maven("https://maven.aliyun.com/repository/public")
+        }
         google()
         mavenCentral()
         gradlePluginPortal()
@@ -9,6 +14,10 @@ pluginManagement {
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
+        if (System.getenv("QUIZGATE_USE_MIRROR") == "1") {
+            maven("https://maven.aliyun.com/repository/google")
+            maven("https://maven.aliyun.com/repository/public")
+        }
         google()
         mavenCentral()
     }

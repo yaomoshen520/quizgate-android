@@ -50,6 +50,11 @@ class DeviceIdentity(context: Context) {
             prefs.edit().putLong(KEY_RULE_VERSION, value).apply()
         }
 
+    /** Received while local-only does not mean applied. Force the next heartbeat to return its snapshot. */
+    fun requestRuleRefresh() {
+        knownRuleVersion = -1L
+    }
+
     fun saveEnrollment(deviceToken: String, bindCode: String) {
         prefs.edit()
             .putString(KEY_DEVICE_TOKEN, deviceToken)
@@ -66,6 +71,7 @@ class DeviceIdentity(context: Context) {
         prefs.edit()
             .remove(KEY_DEVICE_TOKEN)
             .remove(KEY_BIND_CODE)
+            .putLong(KEY_RULE_VERSION, -1L)
             .apply()
     }
 

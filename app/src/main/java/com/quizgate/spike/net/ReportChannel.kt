@@ -10,11 +10,13 @@ import com.quizgate.proto.HeartbeatReply
 import com.quizgate.spike.config.SpikeSettings
 import com.quizgate.spike.monitor.GateEventStore
 import com.quizgate.spike.monitor.GateProbe
+import com.quizgate.spike.monitor.UsageEventStore
 import com.quizgate.spike.service.GateAccessibilityService
 import com.quizgate.spike.util.SpikeLog
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
+import java.io.File
 
 /**
  * 设备往服务端说话的那张嘴。三件事，一个顺序：
@@ -170,20 +172,25 @@ class ReportChannel(
 
     private fun flush(client: ApiClient) {
         val pending = events.pending()
-        if (pending.isEmpty()) {
-            state.recordIdle()
-            return
-        }
         try {
-            val reply = GateEventReportReply.parseFrom(
-                client.post("gate-event", identity.deviceToken, ReportPayloads.toRequest(pending).toByteArray())
-            )
+            val reply = if (pending.isEmpty()) GateEventReportReply.getDefaultInstance() else
+                GateEventReportReply.parseFrom(
+                    client.post("gate-event", identity.deviceToken, ReportPayloads.toRequest(pending).toByteArray()))
+            check(reply.accepted >= 0 && reply.duplicated >= 0 &&
+                reply.accepted + reply.duplicated == pending.size) { "闸门事件确认条数不一致" }
             // 只在"这一整批发出去了"之后才标记已上报。反过来先标记再发，
             // 一旦中途失败，那几条证据就永远只躺在手机里，家长看到的是一片空白。
-            events.markFlushed()
-            state.recordSent(pending.size, reply.accepted, reply.duplicated)
+            events.markFlushed(pending)
+            val usage = UsageUploader(UsageEventStore(File(context.filesDir, UsageEventStore.FILE_NAME))) { body ->
+                client.post("usage", identity.deviceToken, body)
+            }.flush()
+            val accepted = reply.accepted + usage.accepted
+            val duplicated = reply.duplicated + usage.duplicated
+            if (accepted + duplicated == 0) state.recordIdle()
+            else state.recordSent(accepted + duplicated, accepted, duplicated)
         } catch (e: Exception) {
-            state.recordFailed(e.message ?: "闸门事件上报失败")
+            if (e is ApiClient.ReportUnavailable && e.needsReenroll) identity.forgetToken()
+            state.recordFailed(e.message ?: "事件上报失败")
         }
     }
 
