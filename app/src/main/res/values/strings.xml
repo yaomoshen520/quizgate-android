@@ -67,7 +67,11 @@
     <!-- 绑定码：家长认领这台设备的唯一入口，所以放在首页正面而不是实验台里 -->
     <string name="link_title">让家长和这台设备对上</string>
     <string name="link_code_placeholder">— — — — — —</string>
-    <string name="link_body">在家长后台点「认领设备」，输入上面这六个字符，这台手机的闸门记录就会出现在你名下。没认领之前记录只留在这台手机上。</string>
+    <string name="link_body">在家长后台打开这个孩子的页面，把上面这六个字符抄进「认领孩子手机」那一栏，这台手机的闸门记录就会出现在你名下。没认领之前记录只留在这台手机上。</string>
+    <!-- 认领成功之后这一栏就只剩一句话。绑定的事实由心跳带回来，不是靠设备自己猜：
+         enroll 一辈子只跑一次，没有这一栏的话家长会一直抄一个已经用掉的码。 -->
+    <string name="link_code_bound">已对上号</string>
+    <string name="link_body_bound">这台设备已经挂在家长名下，这一栏不用再操作。</string>
 
     <!-- 实验台：联网相关 -->
     <string name="console_server_hint">服务端地址，例如 http://192.168.1.76:8080</string>

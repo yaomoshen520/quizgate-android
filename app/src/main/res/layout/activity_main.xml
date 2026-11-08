@@ -307,6 +307,7 @@
                 android:text="@string/link_code_placeholder" />
 
             <TextView
+                android:id="@+id/linkBodyText"
                 style="@style/Text.Body"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

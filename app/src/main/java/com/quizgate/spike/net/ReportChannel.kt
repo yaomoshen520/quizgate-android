@@ -187,6 +187,11 @@ class ReportChannel(
             // 只有真成功才占住这 60 秒的节流窗口：先记下时间再发的话，一次失败会让后面
             // 两个 tick 直接跳过心跳，而 flush 却照样跑，把那句失败原因冲成「连接正常」。
             lastHeartbeatAt.set(now)
+            if (reply.deviceBound && identity.markBound()) {
+                // 首页那张卡片靠这个事实自己收起来。家长在后台点完"认领"之后，
+                // 没有任何请求会主动打到手机上——心跳是唯一一条能让设备知道归属变了的通道。
+                SpikeLog.record("服务端确认这台设备已归属孩子，首页不再显示绑定码")
+            }
             if (reply.ruleChanged) {
                 applyRule(reply)
             }

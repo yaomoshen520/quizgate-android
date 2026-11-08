@@ -9,14 +9,17 @@ class ParentExtensionTrackerTest {
     private var wall=1_000_000L
     private var saved: SessionStore.Snapshot?=null
     private var fail=false
+    private var attempts=0
+    private val reports=mutableListOf<String>()
     private val policy=CycleRule(60_000, setOf("video.app"), version=12, gamePackages=setOf("game.a","game.b"),
         warningMs=20_000,extensionMs=60_000,maxExtensions=2)
     private val store=object:SessionStore {
         override fun load()=saved
         override fun clear(){ saved=null }
-        override fun save(snapshot: SessionStore.Snapshot) { if(fail) error("disk full");saved=snapshot }
+        override fun save(snapshot: SessionStore.Snapshot) { attempts++; if(fail) error("disk full");saved=snapshot }
     }
-    private fun tracker()=SessionTracker(emptySet(),60_000,monotonicMs={mono},wallMs={wall},store=store,ruleProvider={policy})
+    private fun tracker()=SessionTracker(emptySet(),60_000,monotonicMs={mono},wallMs={wall},store=store,
+        ruleProvider={policy},report={reports.add(it)})
     private fun advance(t:SessionTracker,ms:Long):SessionTracker.Trigger? {
         var left=ms
         while(left>0){val step=minOf(left,2_000);mono+=step;wall+=step;left-=step;t.onTick()?.let{return it}}
@@ -91,11 +94,26 @@ class ParentExtensionTrackerTest {
         assertTrue(t.awaitingQuiz);assertFalse(t.waitingForParent)
         assertFalse(t.receiveParentDecision(t.cycleId,"request-A",Stage.GRANTED,1))
     }
+    /**
+     * 磁盘写不进去时"这一笔不算数"要回滚，同时异常绝不能冒出 persist()：
+     * 计时和触发都跑在主线程（无障碍回调 + tick），冒出去进程就没了，
+     * 而累计时长只在内存里——孩子只要让写盘一直失败就能白拿一段从头计时的娱乐。
+     */
     @Test fun `failed writes never release quiz or grant extra time`() {
         val t=exhausted();fail=true
-        assertTrue(runCatching{t.beginParentRequest()}.isFailure);assertNull(t.parentExtension)
+        assertFalse(t.beginParentRequest());assertNull(t.parentExtension)
+        // 裸计时路径没人 try/catch：这里必须是"照常往下走"，不是抛出。
+        // Advance 够跨过落盘水位，让 onTick 真的走到 save()，否则这条断言是空的。
+        val before=t.sessionMs
+        val beforeAttempts=attempts
+        assertNull(runCatching{ repeat(6){ mono+=2_000; wall+=2_000; t.onTick() } }.exceptionOrNull())
+        assertEquals(before+12_000L,t.sessionMs)
+        // 没有这一条，"没抛出异常"可能只是因为这段时间压根没走到落盘水位。
+        assertTrue(attempts>beforeAttempts)
+        // 一秒一次的 tick 会一直失败，只报第一次，否则这一句会把日志挤满、把要紧的顶掉。
+        assertEquals(1,reports.count{it.contains("落盘失败")})
         fail=false;pending(t);advance(t,60_000);fail=true
-        assertTrue(runCatching{t.receiveParentDecision(t.cycleId,"request-A",Stage.GRANTED,1)}.isFailure)
+        assertFalse(t.receiveParentDecision(t.cycleId,"request-A",Stage.GRANTED,1))
         assertEquals(Stage.PENDING,t.parentExtension?.stage);assertEquals(0L,t.remainingMs)
         fail=false;assertTrue(t.receiveParentDecision(t.cycleId,"request-A",Stage.GRANTED,1))
         assertEquals(60_000L,t.remainingMs)

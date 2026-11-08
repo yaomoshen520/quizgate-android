@@ -65,10 +65,10 @@ class SessionTracker(
         if (!warningVisible || extensionsUsed >= currentRule().maxExtensions) return false
         extensionsUsed++
         extendedMs += currentRule().extensionMs
-        try { persist() } catch (error: Exception) {
+        if (!persist()) {
             extensionsUsed--
             extendedMs -= currentRule().extensionMs
-            throw error
+            return false
         }
         return true
     }
@@ -79,7 +79,7 @@ class SessionTracker(
         val before = parentExtension
         parentExtension = ParentExtension(before?.requestId ?: "", ParentExtension.Stage.SENDING,
             before?.packageName ?: foregroundPackage.orEmpty())
-        try { persist() } catch (error: Exception) { parentExtension = before; throw error }
+        if (!persist()) { parentExtension = before; return false }
         return true
     }
 
@@ -87,7 +87,7 @@ class SessionTracker(
         if (cycle != cycleId || parentExtension?.stage != ParentExtension.Stage.SENDING) return
         val before = parentExtension
         parentExtension = before?.copy(stage = ParentExtension.Stage.FAILED)
-        try { persist() } catch (error: Exception) { parentExtension = before; throw error }
+        if (!persist()) parentExtension = before
     }
 
     /** Only a confirmed server PENDING permits waiting. Persist before releasing a quiz or adding time. */
@@ -107,9 +107,9 @@ class SessionTracker(
             extendedMs += (accumulatedMs - currentRule().thresholdMs - extendedMs).coerceAtLeast(0) + currentRule().extensionMs
         }
         if (awaitingGame && stage in setOf(ParentExtension.Stage.PENDING, ParentExtension.Stage.GRANTED)) awaitingSinceMs = null
-        try { persist() } catch (error: Exception) {
+        if (!persist()) {
             parentExtension = before; extendedMs = oldExtended; awaitingSinceMs = oldAwaiting
-            throw error
+            return false
         }
         return true
     }
@@ -128,6 +128,9 @@ class SessionTracker(
     }
     private var lastAdvanceMs = monotonicMs()
     private var lastPersistedMs = 0L
+
+    /** 落盘失败只说第一次：tick 一秒一次，写不进去的话会一直写不进去。 */
+    private var persistFailing = false
 
     /** 非空表示"已触发、等答题解决"；用它取代旧的布尔位，好让超时能被观测到。 */
     private var awaitingSinceMs: Long? = null
@@ -283,23 +286,51 @@ class SessionTracker(
         store?.clear()
     }
 
-    private fun persist() {
-        lastPersistedMs = accumulatedMs
-        store?.save(
-            SessionStore.Snapshot(
-                foregroundPackage = foregroundPackage,
-                accumulatedMs = accumulatedMs,
-                wallMs = wallMs(),
-                monotonicMs = lastAdvanceMs,
-                bootId = bootId,
-                cycleRule = activeRule,
-                extensionsUsed = extensionsUsed,
-                extendedMs = extendedMs,
-                gameCycle = gameCycle,
-                cycleId = cycleId,
-                parentExtension = parentExtension
-            )
+    /**
+     * 落盘一次会话快照，**不把异常抛给调用方**。
+     *
+     * 计时和触发判定全跑在主线程上（无障碍回调和 tick 都是），落盘的地方一共有九处。
+     * 而 SharedPreferences 的 commit() 写不进去时会直接抛。让它冒出去等于让进程跟着崩：
+     * 累计时长只在内存里，崩一次就归零一次，孩子只要想办法让磁盘写失败
+     * （最省事的是把分区写满）就能拿到一条比卸载手机便宜得多的绕过路径。所以这里咽掉异常，只把事实说出来。
+     *
+     * @return 这份快照真的落盘了。"没落盘就不能算数"的那几处（延期、发起申请、接受审批）
+     *         要用返回值回滚，而不是靠 catch——不返回的话它们会以为已经存好了。
+     */
+    private fun persist(): Boolean {
+        val snapshot = SessionStore.Snapshot(
+            foregroundPackage = foregroundPackage,
+            accumulatedMs = accumulatedMs,
+            wallMs = wallMs(),
+            monotonicMs = lastAdvanceMs,
+            bootId = bootId,
+            cycleRule = activeRule,
+            extensionsUsed = extensionsUsed,
+            extendedMs = extendedMs,
+            gameCycle = gameCycle,
+            cycleId = cycleId,
+            parentExtension = parentExtension
         )
+        return try {
+            store?.save(snapshot)
+            // 只有真写进去才挪这个水位：先挪后写的话，一次失败会让后面
+            // 一整个 PERSIST_INTERVAL 都不再重试，磁盘恢复了也补不回来。
+            lastPersistedMs = accumulatedMs
+            if (persistFailing) {
+                persistFailing = false
+                report("会话状态重新落盘成功")
+            }
+            true
+        } catch (error: Exception) {
+            if (!persistFailing) {
+                persistFailing = true
+                report(
+                    "会话状态落盘失败（${error.javaClass.simpleName}），本轮计时只在内存里，" +
+                        "进程一被杀就从头累计"
+                )
+            }
+            false
+        }
     }
 
     private fun restore() {

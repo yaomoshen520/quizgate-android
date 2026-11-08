@@ -32,4 +32,16 @@ public interface HeartbeatReplyOrBuilder extends
    * @return The serverTimeMs.
    */
   long getServerTimeMs();
+
+  /**
+   * <pre>
+   * 这台设备是否已经挂到某个孩子名下。设备只有 enroll 那一次能拿到绑定码，
+   * 家长认领之后没人再通知它，手机就会一辈子把"去后台输入这六个字符"摆在首页上。
+   * 心跳是唯一稳定的往返通道，所以这个事实从这里回。
+   * </pre>
+   *
+   * <code>bool device_bound = 4;</code>
+   * @return The deviceBound.
+   */
+  boolean getDeviceBound();
 }

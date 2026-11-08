@@ -35,6 +35,25 @@ class DeviceIdentity(context: Context) {
     val bindCode: String
         get() = prefs.getString(KEY_BIND_CODE, "") ?: ""
 
+    /**
+     * 家长有没有把这台设备认领过去。设备自己看不见这件事——enroll 只在第一次登记时跑，
+     * 之后没有任何人再告诉它，所以这个事实只从心跳的 device_bound 落进来。
+     *
+     * 默认 false：老服务端不回这个字段时，手机继续显示绑定码，也就是修复前的样子。
+     * 反过来默认 true 会把码藏掉，而家长手上再也没有第二个入口。
+     */
+    val bound: Boolean
+        get() = prefs.getBoolean(KEY_BOUND, false)
+
+    /** @return 这一次是不是第一次翻成"已认领"，调用方用它决定要不要记一行日志 */
+    fun markBound(): Boolean {
+        if (bound) {
+            return false
+        }
+        prefs.edit().putBoolean(KEY_BOUND, true).apply()
+        return true
+    }
+
     /** enroll 换回令牌才算登记过。没登记就没有 token，后面的调用连门都不用敲。 */
     val enrolled: Boolean
         get() = deviceToken.isNotBlank()
@@ -66,11 +85,17 @@ class DeviceIdentity(context: Context) {
      * 作废令牌，下次 tick 重新走 enroll。install_id 刻意保留：
      * 那是"同一台设备"的唯一依据，换了它服务端就会多出一台新设备，
      * 家长认领过的那条反倒成了孤儿。
+     *
+     * bound 跟着一起清：丢令牌最常见的原因之一就是服务端换了库，
+     * 重新 enroll 会建出一条没被认领的新设备。留着 true 的话首页把绑定码藏掉，
+     * 家长再也抄不到码，这台机器就永久卡在"显示已绑定、服务端没人认领"。
+     * 清掉的代价只是家长在第一次心跳之前会重新看到那六个字符。
      */
     fun forgetToken() {
         prefs.edit()
             .remove(KEY_DEVICE_TOKEN)
             .remove(KEY_BIND_CODE)
+            .putBoolean(KEY_BOUND, false)
             .putLong(KEY_RULE_VERSION, -1L)
             .apply()
     }
@@ -80,6 +105,7 @@ class DeviceIdentity(context: Context) {
         const val KEY_INSTALL_ID = "install_id"
         const val KEY_DEVICE_TOKEN = "device_token"
         const val KEY_BIND_CODE = "bind_code"
+        const val KEY_BOUND = "device_bound"
         const val KEY_RULE_VERSION = "known_rule_version"
     }
 }

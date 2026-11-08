@@ -363,19 +363,29 @@ class MainActivity : Activity() {
     }
 
     /**
-     * 绑定码 + 通道的最后一句话。
+     * 绑定码 + 通道的最后一句话，三种状态：还没登记、等着家长抄码、已经对上号。
      *
      * 空绑定码不能说"稍后自动生成"这类含糊话：家长站在这台手机前的那一刻就是要抄这六个字符，
      * 说不清等于让他白等。这里直接给失败原因，因为最常见的原因就是地址填错或服务没起。
+     * <p>
+     * "已经对上号"这一档是给认领之后准备的：那六个字符是一次性的，服务端认过一次就不再认，
+     * 继续把它摆在最显眼的位置，家长会一次次抄一个用掉的码，以为后台出了毛病。
      */
     private fun renderLink() {
-        val code = identity.bindCode
-        if (code.isBlank()) {
-            binding.bindCodeText.setText(R.string.link_code_placeholder)
-            binding.bindCodeText.setTextColor(getColor(R.color.ink_faint))
+        if (identity.bound) {
+            binding.bindCodeText.setText(R.string.link_code_bound)
+            binding.bindCodeText.setTextColor(getColor(R.color.ok))
+            binding.linkBodyText.setText(R.string.link_body_bound)
         } else {
-            binding.bindCodeText.text = code
-            binding.bindCodeText.setTextColor(getColor(R.color.brand_600))
+            val code = identity.bindCode
+            if (code.isBlank()) {
+                binding.bindCodeText.setText(R.string.link_code_placeholder)
+                binding.bindCodeText.setTextColor(getColor(R.color.ink_faint))
+            } else {
+                binding.bindCodeText.text = code
+                binding.bindCodeText.setTextColor(getColor(R.color.brand_600))
+            }
+            binding.linkBodyText.setText(R.string.link_body)
         }
         binding.linkStatusText.text = reportState.describe()
         binding.linkStatusText.setTextColor(

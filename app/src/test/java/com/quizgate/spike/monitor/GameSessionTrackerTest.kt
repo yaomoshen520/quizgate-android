@@ -76,15 +76,25 @@ class GameSessionTrackerTest {
             policy=p;val t=tracker();assertNull(t.onWindowPackage("game.a"));assertFalse(t.warningVisible);assertFalse(t.extend())
         }
     }
+    /**
+     * 落盘失败时这一笔延期不能算数，但也**不能抛出去**：计时跑在主线程，
+     * 抛出去就是进程崩、累计时长跟着归零，比孩子能想到的任何绕过手段都便宜。
+     */
     @Test fun `failed persistence cannot grant extra time`() {
         var fail=false
+        var attempts=0
         val failing=object : SessionStore {
             override fun load():SessionStore.Snapshot?=null
             override fun clear()=Unit
-            override fun save(snapshot:SessionStore.Snapshot) { if(fail) throw java.io.IOException("disk full") }
+            override fun save(snapshot:SessionStore.Snapshot) { attempts++; if(fail) throw java.io.IOException("disk full") }
         }
         val t=SessionTracker(emptySet(),20_000,monotonicMs={mono},store=failing,ruleProvider={policy})
         t.onWindowPackage("game.a");advance(t,110_000);fail=true
-        assertTrue(runCatching { t.extend() }.isFailure);assertEquals(0,t.extensionsUsed);assertEquals(10_000L,t.remainingMs)
+        assertFalse(t.extend());assertEquals(0,t.extensionsUsed);assertEquals(10_000L,t.remainingMs)
+        // 答题清零那条路径没人 try/catch。attempts 是防空断言：没有它，
+        // "没抛出异常"可能只是因为根本没走到 save()。
+        val before=attempts
+        assertNull(runCatching { t.onQuizCleared() }.exceptionOrNull())
+        assertTrue(attempts>before)
     }
 }

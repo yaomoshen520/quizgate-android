@@ -116,6 +116,50 @@ public  final class HeartbeatReply extends
     serverTimeMs_ = 0L;
   }
 
+  public static final int DEVICE_BOUND_FIELD_NUMBER = 4;
+  private boolean deviceBound_;
+  /**
+   * <pre>
+   * 这台设备是否已经挂到某个孩子名下。设备只有 enroll 那一次能拿到绑定码，
+   * 家长认领之后没人再通知它，手机就会一辈子把"去后台输入这六个字符"摆在首页上。
+   * 心跳是唯一稳定的往返通道，所以这个事实从这里回。
+   * </pre>
+   *
+   * <code>bool device_bound = 4;</code>
+   * @return The deviceBound.
+   */
+  @java.lang.Override
+  public boolean getDeviceBound() {
+    return deviceBound_;
+  }
+  /**
+   * <pre>
+   * 这台设备是否已经挂到某个孩子名下。设备只有 enroll 那一次能拿到绑定码，
+   * 家长认领之后没人再通知它，手机就会一辈子把"去后台输入这六个字符"摆在首页上。
+   * 心跳是唯一稳定的往返通道，所以这个事实从这里回。
+   * </pre>
+   *
+   * <code>bool device_bound = 4;</code>
+   * @param value The deviceBound to set.
+   */
+  private void setDeviceBound(boolean value) {
+    
+    deviceBound_ = value;
+  }
+  /**
+   * <pre>
+   * 这台设备是否已经挂到某个孩子名下。设备只有 enroll 那一次能拿到绑定码，
+   * 家长认领之后没人再通知它，手机就会一辈子把"去后台输入这六个字符"摆在首页上。
+   * 心跳是唯一稳定的往返通道，所以这个事实从这里回。
+   * </pre>
+   *
+   * <code>bool device_bound = 4;</code>
+   */
+  private void clearDeviceBound() {
+
+    deviceBound_ = false;
+  }
+
   public static com.quizgate.proto.HeartbeatReply parseFrom(
       java.nio.ByteBuffer data)
       throws com.google.protobuf.InvalidProtocolBufferException {
@@ -316,6 +360,52 @@ public  final class HeartbeatReply extends
       return this;
     }
 
+    /**
+     * <pre>
+     * 这台设备是否已经挂到某个孩子名下。设备只有 enroll 那一次能拿到绑定码，
+     * 家长认领之后没人再通知它，手机就会一辈子把"去后台输入这六个字符"摆在首页上。
+     * 心跳是唯一稳定的往返通道，所以这个事实从这里回。
+     * </pre>
+     *
+     * <code>bool device_bound = 4;</code>
+     * @return The deviceBound.
+     */
+    @java.lang.Override
+    public boolean getDeviceBound() {
+      return instance.getDeviceBound();
+    }
+    /**
+     * <pre>
+     * 这台设备是否已经挂到某个孩子名下。设备只有 enroll 那一次能拿到绑定码，
+     * 家长认领之后没人再通知它，手机就会一辈子把"去后台输入这六个字符"摆在首页上。
+     * 心跳是唯一稳定的往返通道，所以这个事实从这里回。
+     * </pre>
+     *
+     * <code>bool device_bound = 4;</code>
+     * @param value The deviceBound to set.
+     * @return This builder for chaining.
+     */
+    public Builder setDeviceBound(boolean value) {
+      copyOnWrite();
+      instance.setDeviceBound(value);
+      return this;
+    }
+    /**
+     * <pre>
+     * 这台设备是否已经挂到某个孩子名下。设备只有 enroll 那一次能拿到绑定码，
+     * 家长认领之后没人再通知它，手机就会一辈子把"去后台输入这六个字符"摆在首页上。
+     * 心跳是唯一稳定的往返通道，所以这个事实从这里回。
+     * </pre>
+     *
+     * <code>bool device_bound = 4;</code>
+     * @return This builder for chaining.
+     */
+    public Builder clearDeviceBound() {
+      copyOnWrite();
+      instance.clearDeviceBound();
+      return this;
+    }
+
     // @@protoc_insertion_point(builder_scope:quizgate.HeartbeatReply)
   }
   @java.lang.Override
@@ -336,10 +426,11 @@ public  final class HeartbeatReply extends
             "ruleChanged_",
             "rule_",
             "serverTimeMs_",
+            "deviceBound_",
           };
           java.lang.String info =
-              "\u0000\u0003\u0000\u0001\u0001\u0003\u0003\u0000\u0000\u0000\u0001\u0007\u0002\u1009" +
-              "\u0000\u0003\u0002";
+              "\u0000\u0004\u0000\u0001\u0001\u0004\u0004\u0000\u0000\u0000\u0001\u0007\u0002\u1009" +
+              "\u0000\u0003\u0002\u0004\u0007";
           return newMessageInfo(DEFAULT_INSTANCE, info, objects);
       }
       case GET_DEFAULT_INSTANCE: {
