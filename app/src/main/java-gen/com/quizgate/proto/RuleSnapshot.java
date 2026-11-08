@@ -21,6 +21,7 @@ public  final class RuleSnapshot extends
   private RuleSnapshot() {
     watchedPackages_ = emptyProtobufList();
   }
+  private int bitField0_;
   public static final int THRESHOLD_MINUTES_FIELD_NUMBER = 1;
   private int thresholdMinutes_;
   /**
@@ -242,6 +243,53 @@ public  final class RuleSnapshot extends
   private void clearVersion() {
 
     version_ = 0L;
+  }
+
+  public static final int GAME_MODE_FIELD_NUMBER = 7;
+  private com.quizgate.proto.GameModeRule gameMode_;
+  /**
+   * <code>.quizgate.GameModeRule game_mode = 7;</code>
+   */
+  @java.lang.Override
+  public boolean hasGameMode() {
+    return ((bitField0_ & 0x00000001) != 0);
+  }
+  /**
+   * <code>.quizgate.GameModeRule game_mode = 7;</code>
+   */
+  @java.lang.Override
+  public com.quizgate.proto.GameModeRule getGameMode() {
+    return gameMode_ == null ? com.quizgate.proto.GameModeRule.getDefaultInstance() : gameMode_;
+  }
+  /**
+   * <code>.quizgate.GameModeRule game_mode = 7;</code>
+   */
+  private void setGameMode(com.quizgate.proto.GameModeRule value) {
+    java.util.Objects.requireNonNull(value);
+    gameMode_ = value;
+    bitField0_ |= 0x00000001;
+  }
+  /**
+   * <code>.quizgate.GameModeRule game_mode = 7;</code>
+   */
+  @java.lang.SuppressWarnings("ReferenceEquality")
+  private void mergeGameMode(com.quizgate.proto.GameModeRule value) {
+    java.util.Objects.requireNonNull(value);
+    if (gameMode_ != null &&
+        gameMode_ != com.quizgate.proto.GameModeRule.getDefaultInstance()) {
+      gameMode_ =
+        com.quizgate.proto.GameModeRule.newBuilder(gameMode_).mergeFrom(value).buildPartial();
+    } else {
+      gameMode_ = value;
+    }
+    bitField0_ |= 0x00000001;
+  }
+  /**
+   * <code>.quizgate.GameModeRule game_mode = 7;</code>
+   */
+  private void clearGameMode() {
+    gameMode_ = null;
+    bitField0_ = (bitField0_ & ~0x00000001);
   }
 
   public static com.quizgate.proto.RuleSnapshot parseFrom(
@@ -577,6 +625,53 @@ public  final class RuleSnapshot extends
       return this;
     }
 
+    /**
+     * <code>.quizgate.GameModeRule game_mode = 7;</code>
+     */
+    @java.lang.Override
+    public boolean hasGameMode() {
+      return instance.hasGameMode();
+    }
+    /**
+     * <code>.quizgate.GameModeRule game_mode = 7;</code>
+     */
+    @java.lang.Override
+    public com.quizgate.proto.GameModeRule getGameMode() {
+      return instance.getGameMode();
+    }
+    /**
+     * <code>.quizgate.GameModeRule game_mode = 7;</code>
+     */
+    public Builder setGameMode(com.quizgate.proto.GameModeRule value) {
+      copyOnWrite();
+      instance.setGameMode(value);
+      return this;
+      }
+    /**
+     * <code>.quizgate.GameModeRule game_mode = 7;</code>
+     */
+    public Builder setGameMode(
+        com.quizgate.proto.GameModeRule.Builder builderForValue) {
+      copyOnWrite();
+      instance.setGameMode(builderForValue.build());
+      return this;
+    }
+    /**
+     * <code>.quizgate.GameModeRule game_mode = 7;</code>
+     */
+    public Builder mergeGameMode(com.quizgate.proto.GameModeRule value) {
+      copyOnWrite();
+      instance.mergeGameMode(value);
+      return this;
+    }
+    /**
+     * <code>.quizgate.GameModeRule game_mode = 7;</code>
+     */
+    public Builder clearGameMode() {  copyOnWrite();
+      instance.clearGameMode();
+      return this;
+    }
+
     // @@protoc_insertion_point(builder_scope:quizgate.RuleSnapshot)
   }
   @java.lang.Override
@@ -593,16 +688,18 @@ public  final class RuleSnapshot extends
       }
       case BUILD_MESSAGE_INFO: {
           java.lang.Object[] objects = new java.lang.Object[] {
+            "bitField0_",
             "thresholdMinutes_",
             "dailyLimitMinutes_",
             "graceMinutes_",
             "watchedPackages_",
             "enabled_",
             "version_",
+            "gameMode_",
           };
           java.lang.String info =
-              "\u0000\u0006\u0000\u0000\u0001\u0006\u0006\u0000\u0001\u0000\u0001\u0004\u0002\u0004" +
-              "\u0003\u0004\u0004\u021a\u0005\u0007\u0006\u0002";
+              "\u0000\u0007\u0000\u0001\u0001\u0007\u0007\u0000\u0001\u0000\u0001\u0004\u0002\u0004" +
+              "\u0003\u0004\u0004\u021a\u0005\u0007\u0006\u0002\u0007\u1009\u0000";
           return newMessageInfo(DEFAULT_INSTANCE, info, objects);
       }
       case GET_DEFAULT_INSTANCE: {

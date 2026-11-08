@@ -3,6 +3,7 @@ package com.quizgate.spike.net
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
+import com.quizgate.spike.diagnostics.NetworkMetrics
 
 /**
  * 设备端的网络出口（取题、判分、上报）。只走 protobuf：后端没有 JSON 层，
@@ -12,12 +13,18 @@ import java.net.URL
  * 所以不值得把 IOException/HTTP 状态码这些区别往上摊。唯一的例外是 401——
  * 令牌被服务端认定无效，重试一万次也不会好，只能重新登记。
  */
-class ApiClient(private val baseUrl: String) {
+class ApiClient(
+    private val baseUrl: String,
+    private val observe: (String, Long, Boolean) -> Unit = NetworkMetrics.process::record
+) {
 
     /** @param token 设备令牌；enroll 这一步还没有令牌，传空串就不带头。 */
     fun post(path: String, token: String, body: ByteArray): ByteArray {
-        val connection = URL("$baseUrl/api/device/$path").openConnection() as HttpURLConnection
+        val started = System.nanoTime()
+        var connection: HttpURLConnection? = null
+        var successful = false
         return try {
+            connection = URL("$baseUrl/api/device/$path").openConnection() as HttpURLConnection
             connection.requestMethod = "POST"
             connection.connectTimeout = CONNECT_TIMEOUT_MS
             connection.readTimeout = READ_TIMEOUT_MS
@@ -30,7 +37,7 @@ class ApiClient(private val baseUrl: String) {
             connection.outputStream.use { it.write(body) }
             val status = connection.responseCode
             when {
-                status in 200..299 -> connection.inputStream.use { it.readBytes() }
+                status in 200..299 -> connection.inputStream.use { it.readBytes() }.also { successful = true }
                 status == 401 || status == 403 -> throw ReportUnavailable("$path 认定令牌无效（http=$status）", true)
                 else -> throw ReportUnavailable("$path 被拒（http=$status）", false)
             }
@@ -41,7 +48,9 @@ class ApiClient(private val baseUrl: String) {
             // 所以这一句必须带上地址，否则现场只看到一句未连接而没人想到是安全配置。
             throw ReportUnavailable("连不上 $baseUrl：${e.message}", false)
         } finally {
-            connection.disconnect()
+            runCatching { connection?.disconnect() }
+            // Diagnostic failures must never alter quiz or retry behavior.
+            runCatching { observe(path, (System.nanoTime() - started) / 1_000_000, successful) }
         }
     }
 

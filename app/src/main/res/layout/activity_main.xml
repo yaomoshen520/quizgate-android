@@ -69,6 +69,12 @@
                 android:text="@string/console_chevron_closed" />
         </LinearLayout>
 
+        <Button
+            android:id="@+id/appInventoryButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="授权应用清单与家长规则" />
+
         <!-- 状态主卡：孩子只需要看懂这一块 -->
         <LinearLayout
             android:layout_width="match_parent"
@@ -533,6 +539,14 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_2"
                 android:text="@string/console_toggle_reporting" />
+
+            <Button
+                android:id="@+id/diagnosticsButton"
+                style="@style/Button.Console"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_2"
+                android:text="本机日志与性能" />
 
             <TextView
                 android:id="@+id/logText"

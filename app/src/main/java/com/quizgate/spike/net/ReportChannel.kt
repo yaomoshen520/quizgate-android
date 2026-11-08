@@ -13,6 +13,7 @@ import com.quizgate.spike.monitor.GateProbe
 import com.quizgate.spike.monitor.UsageEventStore
 import com.quizgate.spike.service.GateAccessibilityService
 import com.quizgate.spike.util.SpikeLog
+import com.quizgate.spike.monitor.ParentExtension
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
@@ -37,6 +38,56 @@ class ReportChannel(
 ) {
 
     private val lastHeartbeatAt = AtomicLong(0L)
+    private var lastParentPoll = 0L
+    @Volatile private var acknowledgedParentRequest = ""
+    @Volatile private var cancelledParentCycle = ""
+    @Volatile private var absentParentCycle = ""
+
+    /** Reuse the existing network worker. Only an active application polls, at most every five seconds. */
+    fun syncParentExtension(cycle: String, request: ParentExtension, deliver: (Result<com.quizgate.proto.GameExtension>) -> Unit) {
+        if (request.stage == ParentExtension.Stage.REJECTED) return
+        if (request.stage == ParentExtension.Stage.FAILED && cycle == absentParentCycle) return
+        if (request.stage == ParentExtension.Stage.GRANTED && request.requestId == acknowledgedParentRequest) return
+        if (request.stage == ParentExtension.Stage.CLOSED && cycle == cancelledParentCycle) return
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (lastParentPoll != 0L && now - lastParentPoll < 5_000 || !parentInFlight.compareAndSet(false, true)) return
+        lastParentPoll = now
+        if(request.stage == ParentExtension.Stage.SENDING) absentParentCycle = ""
+        executor.execute {
+            val result = runCatching {
+                check(settings.reportingEnabled) { "请先开启联网上报，才能向家长申请" }
+                val client = ApiClient(settings.serverBaseUrl)
+                if (!identity.enrolled) check(enroll(client)) { "设备尚未登记，请先联网绑定家长" }
+                lastHeartbeatAt.set(0)
+                check(heartbeatIfNeeded(client, System.currentTimeMillis())) { "当前周期尚未同步，申请未提交" }
+                val bytes = if (request.stage == ParentExtension.Stage.SENDING) {
+                    client.post("game-extension", identity.deviceToken, com.quizgate.proto.ApplyGameExtensionRequest.newBuilder()
+                        .setCycleId(cycle).setPackageName(request.packageName).build().toByteArray())
+                } else {
+                    client.post("game-extension-status", identity.deviceToken, com.quizgate.proto.GameExtensionStatusRequest.newBuilder()
+                        .setCycleId(cycle).setCancel(request.stage == ParentExtension.Stage.CLOSED)
+                        .setAppliedRequestId(if (request.stage == ParentExtension.Stage.GRANTED) request.requestId else "")
+                        .build().toByteArray())
+                }
+                val reply = com.quizgate.proto.GameExtension.parseFrom(bytes)
+                if(request.stage == ParentExtension.Stage.CLOSED && reply.requestId.isEmpty()) {
+                    cancelledParentCycle = cycle
+                    return@runCatching reply
+                }
+                if(request.stage == ParentExtension.Stage.FAILED && reply.requestId.isEmpty()) {
+                    // A lost submit response is ambiguous. Reconcile once without creating another request.
+                    absentParentCycle = cycle
+                    return@runCatching reply
+                }
+                check(reply.cycleId == cycle && reply.requestId.isNotEmpty()) { "申请状态不可用" }
+                if (reply.state == com.quizgate.proto.GameExtensionState.GAME_EXTENSION_APPLIED) acknowledgedParentRequest = reply.requestId
+                if (request.stage == ParentExtension.Stage.CLOSED) cancelledParentCycle = cycle
+                reply
+            }
+            parentInFlight.set(false)
+            android.os.Handler(android.os.Looper.getMainLooper()).post { deliver(result) }
+        }
+    }
 
     /**
      * 主线程调这个：已经在跑就直接返回。上报一次可能耗好几秒（弱网加超时），
@@ -83,6 +134,7 @@ class ReportChannel(
             return
         }
         flush(client)
+        syncInventory(client, now)
     }
 
     /** @return 登记成功、令牌可用 */
@@ -102,7 +154,7 @@ class ReportChannel(
                 false
             } else {
                 identity.saveEnrollment(reply.deviceToken, reply.bindCode)
-                SpikeLog.record("登记完成，绑定码 ${reply.bindCode}")
+                SpikeLog.record("登记完成，绑定码已保存")
                 true
             }
         } catch (e: Exception) {
@@ -124,6 +176,11 @@ class ReportChannel(
             .setAccessibilityConnected(health.accessibilityOn && health.serviceBound)
             .setAccumulatedMs(GateAccessibilityService.instance?.currentSessionMs() ?: 0L)
             .setKnownRuleVersion(identity.knownRuleVersion)
+            .setForegroundPackage(if (settings.inventoryConsent) GateAccessibilityService.instance?.observedForeground() ?: "" else "")
+            .setAppliedRuleVersion(GateAccessibilityService.instance?.appliedRuleVersion() ?: 0L)
+            .setExtensionsUsed(GateAccessibilityService.instance?.extensionsUsed() ?: 0)
+            .setGameState(GateAccessibilityService.instance?.gameState() ?: "服务未连接")
+            .setGameCycleId(GateAccessibilityService.instance?.gameCycleId() ?: "")
             .build()
         try {
             val reply = HeartbeatReply.parseFrom(client.post("heartbeat", identity.deviceToken, request.toByteArray()))
@@ -152,22 +209,30 @@ class ReportChannel(
 
     private fun applyRule(reply: HeartbeatReply) {
         val rule = reply.rule
-        identity.knownRuleVersion = rule.version
         if (!settings.followServerRule) {
+            identity.knownRuleVersion = rule.version
             return
         }
-        // 0 分钟不是"家长把阈值调成 0"，是这条规则压根没设过阈值（服务端默认回的快照）。
-        // 当成 0 存下来的话计时器每一秒都会判超限，孩子寸步难行而家长看不到任何原因。
-        if (rule.thresholdMinutes <= 0) {
-            return
+        if (rule.thresholdMinutes <= 0) return
+        settings.cachedRule = rule
+        identity.knownRuleVersion = rule.version
+        settings.thresholdMs = rule.thresholdMinutes * 60_000L
+        SpikeLog.record("收到家长规则，版本 "+rule.version+"；下一轮使用")
+    }
+
+    private fun syncInventory(client: ApiClient, now: Long) {
+        val prefs = context.getSharedPreferences("app_inventory", Context.MODE_PRIVATE)
+        if (now - prefs.getLong("synced_at", 0) < 300_000L && prefs.getBoolean("consent", false) == settings.inventoryConsent) return
+        try {
+            val request = com.quizgate.spike.monitor.AppInventory.collect(context, settings.inventoryConsent)
+            com.quizgate.proto.AppInventoryReply.parseFrom(client.post("app-inventory", identity.deviceToken, request.toByteArray()))
+            prefs.edit().putLong("synced_at", now).putBoolean("consent", settings.inventoryConsent).apply()
+            identity.requestRuleRefresh()
+            lastHeartbeatAt.set(0)
+            heartbeatIfNeeded(client, System.currentTimeMillis())
+        } catch (error: Exception) {
+            SpikeLog.record("应用清单同步失败，稍后重试："+error.message)
         }
-        val thresholdMs = rule.thresholdMinutes * 60_000L
-        if (thresholdMs == settings.thresholdMs) {
-            return
-        }
-        settings.thresholdMs = thresholdMs
-        GateAccessibilityService.instance?.rebuildTracker()
-        SpikeLog.record("按家长设定把阈值改成 ${rule.thresholdMinutes} 分钟")
     }
 
     private fun flush(client: ApiClient) {
@@ -200,6 +265,7 @@ class ReportChannel(
 
         /** 整个进程只有一个上报动作在跑，见 [tick]。 */
         val inFlight = AtomicBoolean(false)
+        val parentInFlight = AtomicBoolean(false)
 
         /**
          * 线程也只有一个：每次首页新建一个 executor 的话，

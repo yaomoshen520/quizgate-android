@@ -42,6 +42,42 @@ class ApiClientTest {
         }
     }
 
+    @Test fun `network metrics observe successful and rejected requests without changing results`() {
+        for (status in listOf(200, 500)) {
+            LocalHttpServer(status, byteArrayOf(7)).use { server ->
+                val samples = mutableListOf<Triple<String, Long, Boolean>>()
+                val result = runCatching { ApiClient(server.baseUrl) { path, ms, ok ->
+                    samples += Triple(path, ms, ok)
+                }.post("answer", "private-token", byteArrayOf(1)) }
+                assertEquals(status == 200, result.isSuccess)
+                assertEquals(1, samples.size)
+                assertEquals("answer", samples.single().first)
+                assertTrue(samples.single().second >= 0)
+                assertEquals(status == 200, samples.single().third)
+                server.received.get(5, TimeUnit.SECONDS)
+            }
+        }
+    }
+
+    @Test fun `metrics failure cannot prevent successful quiz response`() {
+        LocalHttpServer(200, byteArrayOf(42)).use { server ->
+            val result = ApiClient(server.baseUrl) { _, _, _ -> error("diagnostic failure") }
+                .post("answer", "", byteArrayOf(1))
+            assertArrayEquals(byteArrayOf(42), result)
+            server.received.get(5, TimeUnit.SECONDS)
+        }
+    }
+
+    @Test fun `connection failure is counted once without leaking request data`() {
+        val samples = mutableListOf<Triple<String, Long, Boolean>>()
+        val failure = runCatching { ApiClient("invalid URL") { path, ms, ok ->
+            samples += Triple(path, ms, ok)
+        }.post("answer", "private-token", byteArrayOf(1)) }.exceptionOrNull()
+        assertTrue(failure is ApiClient.ReportUnavailable)
+        assertEquals(1, samples.size)
+        assertFalse(samples.single().third)
+    }
+
     private data class Received(val startLine: String, val headers: Map<String, String>, val body: ByteArray)
 
     /** 只使用 java.base，Android 测试编译接口不含 com.sun.net.httpserver。 */

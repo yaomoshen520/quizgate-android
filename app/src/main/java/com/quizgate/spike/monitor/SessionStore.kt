@@ -23,6 +23,12 @@ interface SessionStore {
         val accumulatedMs: Long,
         val wallMs: Long,
         val monotonicMs: Long,
-        val bootId: Long
+        val bootId: Long,
+        val cycleRule: CycleRule? = null,
+        val extensionsUsed: Int = 0,
+        val extendedMs: Long = 0,
+        val gameCycle: Boolean = false,
+        val cycleId: String = "",
+        val parentExtension: ParentExtension? = null
     )
 }

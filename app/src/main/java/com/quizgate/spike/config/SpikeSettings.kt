@@ -16,6 +16,33 @@ class SpikeSettings(context: Context) {
 
     private val prefs = context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
 
+    var inventoryConsent: Boolean
+        get() = prefs.getBoolean("inventory_consent", false)
+        set(value) { prefs.edit().putBoolean("inventory_consent", value).commit() }
+
+    var cachedRule: com.quizgate.proto.RuleSnapshot?
+        get() = prefs.getString("cached_rule", null)?.let {
+            runCatching { com.quizgate.proto.RuleSnapshot.parseFrom(android.util.Base64.decode(it, 0)) }.getOrNull()
+        }
+        set(value) {
+            check(prefs.edit().putString("cached_rule", value?.let {
+                android.util.Base64.encodeToString(it.toByteArray(), android.util.Base64.NO_WRAP)
+            }).commit()) { "家长规则保存失败" }
+        }
+
+    fun cycleRule(): com.quizgate.spike.monitor.CycleRule {
+        val rule = if (followServerRule) cachedRule else null
+        if (rule == null || rule.thresholdMinutes <= 0)
+            return com.quizgate.spike.monitor.CycleRule(thresholdMs, targetPackages)
+        val game = rule.gameMode
+        return com.quizgate.spike.monitor.CycleRule(
+            rule.thresholdMinutes * 60_000L, rule.watchedPackagesList.toSet(), rule.graceMinutes * 60_000L,
+            rule.enabled, rule.version, if (game.enabled) game.gamePackagesList.toSet() else emptySet(),
+            if (game.enabled) game.warningSeconds * 1_000L else 0,
+            game.extensionMinutes * 60_000L, game.maxExtensions
+        )
+    }
+
     var thresholdMs: Long
         get() = prefs.getLong(KEY_THRESHOLD_MS, SPIKE_THRESHOLD_MS)
         set(value) {

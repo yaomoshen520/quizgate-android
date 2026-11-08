@@ -4,7 +4,7 @@ package com.quizgate.spike.monitor
  * 娱乐会话的连续时长累计与触发判定，纯 JVM 逻辑。
  *
  * 口径：目标应用之间可以互相切换（抖音切游戏算同一段），离开全部目标应用不足宽限期
- * 仍算连续（切出去几十秒再回来不能重置计时），灭屏则本轮作废。
+ * 仍算连续；游戏周期在熄屏或离开时暂停且保留次数，答对后才开始下一轮。
  *
  * 两个时钟分工：单调时钟只做**增量**，绝对时间只用来判断快照有多旧、以及识别重启。
  * 状态走 [SessionStore] 落盘，因此进程被杀或服务重绑之后累计时长不会归零——
@@ -19,7 +19,8 @@ class SessionTracker(
     private val wallMs: () -> Long = monotonicMs,
     private val store: SessionStore? = null,
     private val report: (String) -> Unit = {},
-    private val recordPlayed: (String, Long, Long) -> Unit = { _, _, _ -> }
+    private val recordPlayed: (String, Long, Long) -> Unit = { _, _, _ -> },
+    private val ruleProvider: (() -> CycleRule)? = null
 ) {
 
     data class Trigger(val packageUnderQuota: String, val accumulatedMs: Long)
@@ -27,11 +28,110 @@ class SessionTracker(
     private var foregroundPackage: String? = null
     private var awaySinceMs: Long? = null
     private var accumulatedMs = 0L
+    private var activeRule: CycleRule? = null
+    private var extendedMs = 0L
+    var extensionsUsed: Int = 0
+        private set
+    private var gameCycle = false
+    var cycleId: String = ""
+        private set
+    var parentExtension: ParentExtension? = null
+        private set
+    val awaitingQuiz: Boolean get() = awaitingSinceMs != null
+    val waitingForParent: Boolean get() = parentExtension?.stage == ParentExtension.Stage.PENDING
+    val canRequestParent: Boolean get() = warningVisible && extensionsUsed >= maxExtensions &&
+        (parentExtension == null || parentExtension?.stage == ParentExtension.Stage.FAILED)
+    private fun defaultRule() = CycleRule(thresholdMs, targetPackages, graceMs)
+    private fun currentRule() = activeRule ?: ruleProvider?.invoke() ?: defaultRule()
+    val appliedRuleVersion: Long get() = activeRule?.version ?: 0L
+    val remainingMs: Long get() = (currentRule().thresholdMs + extendedMs - accumulatedMs).coerceAtLeast(0)
+    val extensionMinutes: Int get() = (currentRule().extensionMs / 60_000).toInt()
+    val maxExtensions: Int get() = currentRule().maxExtensions
+    val isGameForeground: Boolean get() = currentRule().isGame(foregroundPackage)
+    val warningVisible: Boolean get() = isGameForeground && awaitingSinceMs == null &&
+        (waitingForParent || (remainingMs > 0 && remainingMs <= currentRule().warningMs))
+    val gameState: String get() = when {
+        awaitingSinceMs != null -> "答题中"
+        waitingForParent -> "等待家长审批，可继续玩"
+        warningVisible -> "倒计时"
+        isGameForeground -> "游戏中"
+        gameCycle -> "已暂停，返回后继续"
+        else -> "未开始"
+    }
+
+    /** Deduct and persist before updating the UI; repeat taps cannot create extra time. */
+    fun extend(): Boolean {
+        advanceTo(monotonicMs())
+        if (!warningVisible || extensionsUsed >= currentRule().maxExtensions) return false
+        extensionsUsed++
+        extendedMs += currentRule().extensionMs
+        try { persist() } catch (error: Exception) {
+            extensionsUsed--
+            extendedMs -= currentRule().extensionMs
+            throw error
+        }
+        return true
+    }
+
+    fun beginParentRequest(): Boolean {
+        advanceTo(monotonicMs())
+        if (!canRequestParent) return false
+        val before = parentExtension
+        parentExtension = ParentExtension(before?.requestId ?: "", ParentExtension.Stage.SENDING,
+            before?.packageName ?: foregroundPackage.orEmpty())
+        try { persist() } catch (error: Exception) { parentExtension = before; throw error }
+        return true
+    }
+
+    fun parentRequestFailed(cycle: String) {
+        if (cycle != cycleId || parentExtension?.stage != ParentExtension.Stage.SENDING) return
+        val before = parentExtension
+        parentExtension = before?.copy(stage = ParentExtension.Stage.FAILED)
+        try { persist() } catch (error: Exception) { parentExtension = before; throw error }
+    }
+
+    /** Only a confirmed server PENDING permits waiting. Persist before releasing a quiz or adding time. */
+    fun receiveParentDecision(cycle: String, requestId: String, stage: ParentExtension.Stage, minutes: Int): Boolean {
+        val before = parentExtension ?: return false
+        if (cycle != cycleId || requestId.isBlank() || minutes != extensionMinutes || minutes !in 1..15) return false
+        if (before.requestId.isNotEmpty() && before.requestId != requestId) return false
+        if (before.stage in setOf(ParentExtension.Stage.GRANTED, ParentExtension.Stage.REJECTED, ParentExtension.Stage.CLOSED)) return false
+        if (before.stage == stage && before.requestId == requestId) return false
+        if (stage !in setOf(ParentExtension.Stage.PENDING, ParentExtension.Stage.GRANTED, ParentExtension.Stage.REJECTED, ParentExtension.Stage.CLOSED)) return false
+        advanceTo(monotonicMs())
+        val oldExtended = extendedMs
+        val oldAwaiting = awaitingSinceMs
+        parentExtension = ParentExtension(requestId, stage, before.packageName)
+        if (stage == ParentExtension.Stage.GRANTED) {
+            // Preserve unused time; after the old deadline, give the full approved duration from now.
+            extendedMs += (accumulatedMs - currentRule().thresholdMs - extendedMs).coerceAtLeast(0) + currentRule().extensionMs
+        }
+        if (awaitingGame && stage in setOf(ParentExtension.Stage.PENDING, ParentExtension.Stage.GRANTED)) awaitingSinceMs = null
+        try { persist() } catch (error: Exception) {
+            parentExtension = before; extendedMs = oldExtended; awaitingSinceMs = oldAwaiting
+            throw error
+        }
+        return true
+    }
+
+    fun quizNow(): Trigger? {
+        val pkg = foregroundPackage ?: return null
+        if (awaitingSinceMs != null) return null
+        awaitingSinceMs = monotonicMs()
+        awaitingGame = currentRule().isGame(pkg)
+        parentExtension?.let {
+            if (it.stage in setOf(ParentExtension.Stage.SENDING, ParentExtension.Stage.PENDING, ParentExtension.Stage.FAILED))
+                parentExtension = it.copy(stage = ParentExtension.Stage.CLOSED)
+        }
+        persist()
+        return Trigger(pkg, accumulatedMs)
+    }
     private var lastAdvanceMs = monotonicMs()
     private var lastPersistedMs = 0L
 
     /** 非空表示"已触发、等答题解决"；用它取代旧的布尔位，好让超时能被观测到。 */
     private var awaitingSinceMs: Long? = null
+    private var awaitingGame = false
 
     /** 抢屏失败后的退避时刻，避免每 tick 重试形成风暴。 */
     private var retryAllowedAfterMs = 0L
@@ -55,7 +155,11 @@ class SessionTracker(
         if (packageName == null) {
             return evaluate(now)
         }
-        if (targetPackages.contains(packageName)) {
+        val rule = currentRule()
+        if (rule.watches(packageName)) {
+            if (activeRule == null) activeRule = rule
+            if (cycleId.isEmpty()) cycleId = java.util.UUID.randomUUID().toString()
+            if (rule.isGame(packageName)) gameCycle = true
             foregroundPackage = packageName
             awaySinceMs = null
         } else {
@@ -86,12 +190,23 @@ class SessionTracker(
 
     fun onScreenOff(recordFinalStep: Boolean = true) {
         if (recordFinalStep) advanceTo(monotonicMs())
-        reset()
+        if (gameCycle) {
+            foregroundPackage = null
+            awaySinceMs = monotonicMs()
+            awaitingSinceMs = null
+            persist()
+        } else reset()
     }
 
     /** 答对放行：本轮作废，重新累计下一个阈值周期。前台应用保持不变，等下一个事件续上计时。 */
     fun onQuizCleared() {
         accumulatedMs = 0L
+        activeRule = null
+        extendedMs = 0L
+        extensionsUsed = 0
+        gameCycle = false
+        cycleId = ""
+        parentExtension = null
         awaySinceMs = null
         awaitingSinceMs = null
         lastAdvanceMs = monotonicMs()
@@ -125,11 +240,12 @@ class SessionTracker(
 
     private fun evaluate(now: Long): Trigger? {
         val away = awaySinceMs
-        if (foregroundPackage == null && away != null && now - away >= graceMs) {
+        if (!gameCycle && foregroundPackage == null && away != null && now - away >= currentRule().graceMs) {
             reset()
             return null
         }
         val pkg = foregroundPackage ?: return null
+        if (waitingForParent && currentRule().isGame(pkg)) return null
         val awaiting = awaitingSinceMs
         if (awaiting != null) {
             if (now - awaiting < AWAITING_TIMEOUT_MS) {
@@ -138,18 +254,26 @@ class SessionTracker(
             report("待答题已挂起 ${now - awaiting}ms 未解决，重新允许触发")
             awaitingSinceMs = null
         }
-        if (accumulatedMs < thresholdMs) {
+        val limit = currentRule().thresholdMs + if (currentRule().isGame(pkg)) extendedMs else 0L
+        if (accumulatedMs < limit) {
             return null
         }
         if (now < retryAllowedAfterMs) {
             return null
         }
         awaitingSinceMs = now
+        awaitingGame = currentRule().isGame(pkg)
         persist()
         return Trigger(pkg, accumulatedMs)
     }
 
     private fun reset() {
+        cycleId = ""
+        parentExtension = null
+        activeRule = null
+        extendedMs = 0L
+        extensionsUsed = 0
+        gameCycle = false
         foregroundPackage = null
         awaySinceMs = null
         accumulatedMs = 0L
@@ -167,15 +291,39 @@ class SessionTracker(
                 accumulatedMs = accumulatedMs,
                 wallMs = wallMs(),
                 monotonicMs = lastAdvanceMs,
-                bootId = bootId
+                bootId = bootId,
+                cycleRule = activeRule,
+                extensionsUsed = extensionsUsed,
+                extendedMs = extendedMs,
+                gameCycle = gameCycle,
+                cycleId = cycleId,
+                parentExtension = parentExtension
             )
         )
     }
 
     private fun restore() {
         val snapshot = store?.load() ?: return
+        if (snapshot.gameCycle && snapshot.cycleRule != null) {
+            activeRule = snapshot.cycleRule
+            cycleId = snapshot.cycleId.ifEmpty { java.util.UUID.randomUUID().toString() }
+            parentExtension = snapshot.parentExtension
+            accumulatedMs = snapshot.accumulatedMs.coerceAtLeast(0)
+            extensionsUsed = snapshot.extensionsUsed.coerceIn(0, 2)
+            val baseLimit = snapshot.cycleRule.thresholdMs + snapshot.cycleRule.extensionMs * extensionsUsed
+            val maximum = if (parentExtension?.stage == ParentExtension.Stage.GRANTED)
+                snapshot.cycleRule.extensionMs * (extensionsUsed + 1) + (accumulatedMs - baseLimit).coerceAtLeast(0)
+                else snapshot.cycleRule.extensionMs * extensionsUsed
+            extendedMs = snapshot.extendedMs.coerceIn(0, maximum.coerceAtLeast(0))
+            gameCycle = true
+            // Never count an unobserved interval, even across boot or wall-clock changes.
+            foregroundPackage = null
+            lastAdvanceMs = monotonicMs()
+            return
+        }
         val pkg = snapshot.foregroundPackage
-        if (pkg == null || !targetPackages.contains(pkg)) {
+        val restoredRule = snapshot.cycleRule ?: defaultRule()
+        if (pkg == null || !restoredRule.watches(pkg)) {
             store.clear()
             return
         }
@@ -191,6 +339,7 @@ class SessionTracker(
             store.clear()
             return
         }
+        activeRule = snapshot.cycleRule
         foregroundPackage = pkg
         accumulatedMs = snapshot.accumulatedMs
         if (snapshot.bootId == bootId) {

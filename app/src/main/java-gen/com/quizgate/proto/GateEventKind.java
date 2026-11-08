@@ -47,6 +47,22 @@ public enum GateEventKind
    * <code>GATE_INTERRUPTED = 7;</code>
    */
   GATE_INTERRUPTED(7),
+  /**
+   * <code>GAME_WARNING = 8;</code>
+   */
+  GAME_WARNING(8),
+  /**
+   * <code>GAME_EXTENDED = 9;</code>
+   */
+  GAME_EXTENDED(9),
+  /**
+   * <code>GAME_FORCED = 10;</code>
+   */
+  GAME_FORCED(10),
+  /**
+   * <code>GAME_WARNING_FAILED = 11;</code>
+   */
+  GAME_WARNING_FAILED(11),
   UNRECOGNIZED(-1),
   ;
 
@@ -82,6 +98,22 @@ public enum GateEventKind
    * <code>GATE_INTERRUPTED = 7;</code>
    */
   public static final int GATE_INTERRUPTED_VALUE = 7;
+  /**
+   * <code>GAME_WARNING = 8;</code>
+   */
+  public static final int GAME_WARNING_VALUE = 8;
+  /**
+   * <code>GAME_EXTENDED = 9;</code>
+   */
+  public static final int GAME_EXTENDED_VALUE = 9;
+  /**
+   * <code>GAME_FORCED = 10;</code>
+   */
+  public static final int GAME_FORCED_VALUE = 10;
+  /**
+   * <code>GAME_WARNING_FAILED = 11;</code>
+   */
+  public static final int GAME_WARNING_FAILED_VALUE = 11;
 
 
   @java.lang.Override
@@ -112,6 +144,10 @@ public enum GateEventKind
       case 5: return NOTIFICATIONS_OFF;
       case 6: return NOTIFICATIONS_RESTORED;
       case 7: return GATE_INTERRUPTED;
+      case 8: return GAME_WARNING;
+      case 9: return GAME_EXTENDED;
+      case 10: return GAME_FORCED;
+      case 11: return GAME_WARNING_FAILED;
       default: return null;
     }
   }

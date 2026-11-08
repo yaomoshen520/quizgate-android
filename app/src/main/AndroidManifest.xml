@@ -8,8 +8,11 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- 上报通道要出网。这一条是本应用唯一主动联网的理由：题目、时长、拆闸门记录都往自己的服务端发。 -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- 家长管控的应用清单为核心功能；采集前另行取得用户明确同意。 -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
 
     <application
+        android:name=".QuizgateApplication"
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"

@@ -19,6 +19,9 @@ public  final class HeartbeatRequest extends
     // @@protoc_insertion_point(message_implements:quizgate.HeartbeatRequest)
     HeartbeatRequestOrBuilder {
   private HeartbeatRequest() {
+    foregroundPackage_ = "";
+    gameState_ = "";
+    gameCycleId_ = "";
   }
   public static final int ACCESSIBILITY_CONNECTED_FIELD_NUMBER = 1;
   private boolean accessibilityConnected_;
@@ -108,6 +111,199 @@ public  final class HeartbeatRequest extends
   private void clearKnownRuleVersion() {
 
     knownRuleVersion_ = 0L;
+  }
+
+  public static final int FOREGROUND_PACKAGE_FIELD_NUMBER = 4;
+  private java.lang.String foregroundPackage_;
+  /**
+   * <code>string foreground_package = 4;</code>
+   * @return The foregroundPackage.
+   */
+  @java.lang.Override
+  public java.lang.String getForegroundPackage() {
+    return foregroundPackage_;
+  }
+  /**
+   * <code>string foreground_package = 4;</code>
+   * @return The bytes for foregroundPackage.
+   */
+  @java.lang.Override
+  public com.google.protobuf.ByteString
+      getForegroundPackageBytes() {
+    return com.google.protobuf.ByteString.copyFromUtf8(foregroundPackage_);
+  }
+  /**
+   * <code>string foreground_package = 4;</code>
+   * @param value The foregroundPackage to set.
+   */
+  private void setForegroundPackage(
+      java.lang.String value) {
+    java.util.Objects.requireNonNull(value);
+
+    foregroundPackage_ = value;
+  }
+  /**
+   * <code>string foreground_package = 4;</code>
+   */
+  private void clearForegroundPackage() {
+
+    foregroundPackage_ = getDefaultInstance().getForegroundPackage();
+  }
+  /**
+   * <code>string foreground_package = 4;</code>
+   * @param value The bytes for foregroundPackage to set.
+   */
+  private void setForegroundPackageBytes(
+      com.google.protobuf.ByteString value) {
+    checkByteStringIsUtf8(value);
+    foregroundPackage_ = value.toStringUtf8();
+
+  }
+
+  public static final int APPLIED_RULE_VERSION_FIELD_NUMBER = 5;
+  private long appliedRuleVersion_;
+  /**
+   * <code>int64 applied_rule_version = 5;</code>
+   * @return The appliedRuleVersion.
+   */
+  @java.lang.Override
+  public long getAppliedRuleVersion() {
+    return appliedRuleVersion_;
+  }
+  /**
+   * <code>int64 applied_rule_version = 5;</code>
+   * @param value The appliedRuleVersion to set.
+   */
+  private void setAppliedRuleVersion(long value) {
+    
+    appliedRuleVersion_ = value;
+  }
+  /**
+   * <code>int64 applied_rule_version = 5;</code>
+   */
+  private void clearAppliedRuleVersion() {
+
+    appliedRuleVersion_ = 0L;
+  }
+
+  public static final int EXTENSIONS_USED_FIELD_NUMBER = 6;
+  private int extensionsUsed_;
+  /**
+   * <code>int32 extensions_used = 6;</code>
+   * @return The extensionsUsed.
+   */
+  @java.lang.Override
+  public int getExtensionsUsed() {
+    return extensionsUsed_;
+  }
+  /**
+   * <code>int32 extensions_used = 6;</code>
+   * @param value The extensionsUsed to set.
+   */
+  private void setExtensionsUsed(int value) {
+    
+    extensionsUsed_ = value;
+  }
+  /**
+   * <code>int32 extensions_used = 6;</code>
+   */
+  private void clearExtensionsUsed() {
+
+    extensionsUsed_ = 0;
+  }
+
+  public static final int GAME_STATE_FIELD_NUMBER = 7;
+  private java.lang.String gameState_;
+  /**
+   * <code>string game_state = 7;</code>
+   * @return The gameState.
+   */
+  @java.lang.Override
+  public java.lang.String getGameState() {
+    return gameState_;
+  }
+  /**
+   * <code>string game_state = 7;</code>
+   * @return The bytes for gameState.
+   */
+  @java.lang.Override
+  public com.google.protobuf.ByteString
+      getGameStateBytes() {
+    return com.google.protobuf.ByteString.copyFromUtf8(gameState_);
+  }
+  /**
+   * <code>string game_state = 7;</code>
+   * @param value The gameState to set.
+   */
+  private void setGameState(
+      java.lang.String value) {
+    java.util.Objects.requireNonNull(value);
+
+    gameState_ = value;
+  }
+  /**
+   * <code>string game_state = 7;</code>
+   */
+  private void clearGameState() {
+
+    gameState_ = getDefaultInstance().getGameState();
+  }
+  /**
+   * <code>string game_state = 7;</code>
+   * @param value The bytes for gameState to set.
+   */
+  private void setGameStateBytes(
+      com.google.protobuf.ByteString value) {
+    checkByteStringIsUtf8(value);
+    gameState_ = value.toStringUtf8();
+
+  }
+
+  public static final int GAME_CYCLE_ID_FIELD_NUMBER = 8;
+  private java.lang.String gameCycleId_;
+  /**
+   * <code>string game_cycle_id = 8;</code>
+   * @return The gameCycleId.
+   */
+  @java.lang.Override
+  public java.lang.String getGameCycleId() {
+    return gameCycleId_;
+  }
+  /**
+   * <code>string game_cycle_id = 8;</code>
+   * @return The bytes for gameCycleId.
+   */
+  @java.lang.Override
+  public com.google.protobuf.ByteString
+      getGameCycleIdBytes() {
+    return com.google.protobuf.ByteString.copyFromUtf8(gameCycleId_);
+  }
+  /**
+   * <code>string game_cycle_id = 8;</code>
+   * @param value The gameCycleId to set.
+   */
+  private void setGameCycleId(
+      java.lang.String value) {
+    java.util.Objects.requireNonNull(value);
+
+    gameCycleId_ = value;
+  }
+  /**
+   * <code>string game_cycle_id = 8;</code>
+   */
+  private void clearGameCycleId() {
+
+    gameCycleId_ = getDefaultInstance().getGameCycleId();
+  }
+  /**
+   * <code>string game_cycle_id = 8;</code>
+   * @param value The bytes for gameCycleId to set.
+   */
+  private void setGameCycleIdBytes(
+      com.google.protobuf.ByteString value) {
+    checkByteStringIsUtf8(value);
+    gameCycleId_ = value.toStringUtf8();
+
   }
 
   public static com.quizgate.proto.HeartbeatRequest parseFrom(
@@ -307,6 +503,209 @@ public  final class HeartbeatRequest extends
       return this;
     }
 
+    /**
+     * <code>string foreground_package = 4;</code>
+     * @return The foregroundPackage.
+     */
+    @java.lang.Override
+    public java.lang.String getForegroundPackage() {
+      return instance.getForegroundPackage();
+    }
+    /**
+     * <code>string foreground_package = 4;</code>
+     * @return The bytes for foregroundPackage.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getForegroundPackageBytes() {
+      return instance.getForegroundPackageBytes();
+    }
+    /**
+     * <code>string foreground_package = 4;</code>
+     * @param value The foregroundPackage to set.
+     * @return This builder for chaining.
+     */
+    public Builder setForegroundPackage(
+        java.lang.String value) {
+      copyOnWrite();
+      instance.setForegroundPackage(value);
+      return this;
+    }
+    /**
+     * <code>string foreground_package = 4;</code>
+     * @return This builder for chaining.
+     */
+    public Builder clearForegroundPackage() {
+      copyOnWrite();
+      instance.clearForegroundPackage();
+      return this;
+    }
+    /**
+     * <code>string foreground_package = 4;</code>
+     * @param value The bytes for foregroundPackage to set.
+     * @return This builder for chaining.
+     */
+    public Builder setForegroundPackageBytes(
+        com.google.protobuf.ByteString value) {
+      copyOnWrite();
+      instance.setForegroundPackageBytes(value);
+      return this;
+    }
+
+    /**
+     * <code>int64 applied_rule_version = 5;</code>
+     * @return The appliedRuleVersion.
+     */
+    @java.lang.Override
+    public long getAppliedRuleVersion() {
+      return instance.getAppliedRuleVersion();
+    }
+    /**
+     * <code>int64 applied_rule_version = 5;</code>
+     * @param value The appliedRuleVersion to set.
+     * @return This builder for chaining.
+     */
+    public Builder setAppliedRuleVersion(long value) {
+      copyOnWrite();
+      instance.setAppliedRuleVersion(value);
+      return this;
+    }
+    /**
+     * <code>int64 applied_rule_version = 5;</code>
+     * @return This builder for chaining.
+     */
+    public Builder clearAppliedRuleVersion() {
+      copyOnWrite();
+      instance.clearAppliedRuleVersion();
+      return this;
+    }
+
+    /**
+     * <code>int32 extensions_used = 6;</code>
+     * @return The extensionsUsed.
+     */
+    @java.lang.Override
+    public int getExtensionsUsed() {
+      return instance.getExtensionsUsed();
+    }
+    /**
+     * <code>int32 extensions_used = 6;</code>
+     * @param value The extensionsUsed to set.
+     * @return This builder for chaining.
+     */
+    public Builder setExtensionsUsed(int value) {
+      copyOnWrite();
+      instance.setExtensionsUsed(value);
+      return this;
+    }
+    /**
+     * <code>int32 extensions_used = 6;</code>
+     * @return This builder for chaining.
+     */
+    public Builder clearExtensionsUsed() {
+      copyOnWrite();
+      instance.clearExtensionsUsed();
+      return this;
+    }
+
+    /**
+     * <code>string game_state = 7;</code>
+     * @return The gameState.
+     */
+    @java.lang.Override
+    public java.lang.String getGameState() {
+      return instance.getGameState();
+    }
+    /**
+     * <code>string game_state = 7;</code>
+     * @return The bytes for gameState.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getGameStateBytes() {
+      return instance.getGameStateBytes();
+    }
+    /**
+     * <code>string game_state = 7;</code>
+     * @param value The gameState to set.
+     * @return This builder for chaining.
+     */
+    public Builder setGameState(
+        java.lang.String value) {
+      copyOnWrite();
+      instance.setGameState(value);
+      return this;
+    }
+    /**
+     * <code>string game_state = 7;</code>
+     * @return This builder for chaining.
+     */
+    public Builder clearGameState() {
+      copyOnWrite();
+      instance.clearGameState();
+      return this;
+    }
+    /**
+     * <code>string game_state = 7;</code>
+     * @param value The bytes for gameState to set.
+     * @return This builder for chaining.
+     */
+    public Builder setGameStateBytes(
+        com.google.protobuf.ByteString value) {
+      copyOnWrite();
+      instance.setGameStateBytes(value);
+      return this;
+    }
+
+    /**
+     * <code>string game_cycle_id = 8;</code>
+     * @return The gameCycleId.
+     */
+    @java.lang.Override
+    public java.lang.String getGameCycleId() {
+      return instance.getGameCycleId();
+    }
+    /**
+     * <code>string game_cycle_id = 8;</code>
+     * @return The bytes for gameCycleId.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getGameCycleIdBytes() {
+      return instance.getGameCycleIdBytes();
+    }
+    /**
+     * <code>string game_cycle_id = 8;</code>
+     * @param value The gameCycleId to set.
+     * @return This builder for chaining.
+     */
+    public Builder setGameCycleId(
+        java.lang.String value) {
+      copyOnWrite();
+      instance.setGameCycleId(value);
+      return this;
+    }
+    /**
+     * <code>string game_cycle_id = 8;</code>
+     * @return This builder for chaining.
+     */
+    public Builder clearGameCycleId() {
+      copyOnWrite();
+      instance.clearGameCycleId();
+      return this;
+    }
+    /**
+     * <code>string game_cycle_id = 8;</code>
+     * @param value The bytes for gameCycleId to set.
+     * @return This builder for chaining.
+     */
+    public Builder setGameCycleIdBytes(
+        com.google.protobuf.ByteString value) {
+      copyOnWrite();
+      instance.setGameCycleIdBytes(value);
+      return this;
+    }
+
     // @@protoc_insertion_point(builder_scope:quizgate.HeartbeatRequest)
   }
   @java.lang.Override
@@ -326,10 +725,15 @@ public  final class HeartbeatRequest extends
             "accessibilityConnected_",
             "accumulatedMs_",
             "knownRuleVersion_",
+            "foregroundPackage_",
+            "appliedRuleVersion_",
+            "extensionsUsed_",
+            "gameState_",
+            "gameCycleId_",
           };
           java.lang.String info =
-              "\u0000\u0003\u0000\u0000\u0001\u0003\u0003\u0000\u0000\u0000\u0001\u0007\u0002\u0002" +
-              "\u0003\u0002";
+              "\u0000\b\u0000\u0000\u0001\b\b\u0000\u0000\u0000\u0001\u0007\u0002\u0002\u0003\u0002" +
+              "\u0004\u0208\u0005\u0002\u0006\u0004\u0007\u0208\b\u0208";
           return newMessageInfo(DEFAULT_INSTANCE, info, objects);
       }
       case GET_DEFAULT_INSTANCE: {

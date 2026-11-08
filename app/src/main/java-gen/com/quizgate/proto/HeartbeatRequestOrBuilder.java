@@ -31,4 +31,52 @@ public interface HeartbeatRequestOrBuilder extends
    * @return The knownRuleVersion.
    */
   long getKnownRuleVersion();
+
+  /**
+   * <code>string foreground_package = 4;</code>
+   * @return The foregroundPackage.
+   */
+  java.lang.String getForegroundPackage();
+  /**
+   * <code>string foreground_package = 4;</code>
+   * @return The bytes for foregroundPackage.
+   */
+  com.google.protobuf.ByteString
+      getForegroundPackageBytes();
+
+  /**
+   * <code>int64 applied_rule_version = 5;</code>
+   * @return The appliedRuleVersion.
+   */
+  long getAppliedRuleVersion();
+
+  /**
+   * <code>int32 extensions_used = 6;</code>
+   * @return The extensionsUsed.
+   */
+  int getExtensionsUsed();
+
+  /**
+   * <code>string game_state = 7;</code>
+   * @return The gameState.
+   */
+  java.lang.String getGameState();
+  /**
+   * <code>string game_state = 7;</code>
+   * @return The bytes for gameState.
+   */
+  com.google.protobuf.ByteString
+      getGameStateBytes();
+
+  /**
+   * <code>string game_cycle_id = 8;</code>
+   * @return The gameCycleId.
+   */
+  java.lang.String getGameCycleId();
+  /**
+   * <code>string game_cycle_id = 8;</code>
+   * @return The bytes for gameCycleId.
+   */
+  com.google.protobuf.ByteString
+      getGameCycleIdBytes();
 }

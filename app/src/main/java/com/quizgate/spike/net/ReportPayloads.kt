@@ -30,6 +30,10 @@ object ReportPayloads {
      * 而写 when 的话编译期直接报"分支没覆盖全"。
      */
     fun toProtoKind(kind: GateEventKind): ProtoGateEventKind = when (kind) {
+        GateEventKind.GAME_WARNING -> ProtoGateEventKind.GAME_WARNING
+        GateEventKind.GAME_EXTENDED -> ProtoGateEventKind.GAME_EXTENDED
+        GateEventKind.GAME_FORCED -> ProtoGateEventKind.GAME_FORCED
+        GateEventKind.GAME_WARNING_FAILED -> ProtoGateEventKind.GAME_WARNING_FAILED
         GateEventKind.ACCESSIBILITY_OFF -> ProtoGateEventKind.ACCESSIBILITY_OFF
         GateEventKind.ACCESSIBILITY_RESTORED -> ProtoGateEventKind.ACCESSIBILITY_RESTORED
         GateEventKind.OVERLAY_OFF -> ProtoGateEventKind.OVERLAY_OFF

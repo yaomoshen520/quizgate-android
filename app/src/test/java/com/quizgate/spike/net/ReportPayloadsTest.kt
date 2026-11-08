@@ -47,8 +47,12 @@ class ReportPayloadsTest {
 
     /** 逐条钉死两端对应关系，而不是只钉首尾：中间任何一格串了位，上面那条查不出来（两边都还是"合法值"）。 */
     @Test
-    fun `七种类型逐条对应到同名那一格`() {
+    fun `全部类型逐条对应到同名那一格`() {
         val expected = mapOf(
+            LocalKind.GAME_WARNING to WireKind.GAME_WARNING,
+            LocalKind.GAME_EXTENDED to WireKind.GAME_EXTENDED,
+            LocalKind.GAME_FORCED to WireKind.GAME_FORCED,
+            LocalKind.GAME_WARNING_FAILED to WireKind.GAME_WARNING_FAILED,
             LocalKind.ACCESSIBILITY_OFF to WireKind.ACCESSIBILITY_OFF,
             LocalKind.ACCESSIBILITY_RESTORED to WireKind.ACCESSIBILITY_RESTORED,
             LocalKind.OVERLAY_OFF to WireKind.OVERLAY_OFF,

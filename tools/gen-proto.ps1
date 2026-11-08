@@ -1,7 +1,8 @@
 param(
     [string]$ServerRoot = (Join-Path $PSScriptRoot '..\..\quizgate-server'),
     [string]$Protoc = $env:PROTOC,
-    [switch]$Check
+    [switch]$Check,
+    [switch]$Remote
 )
 $ErrorActionPreference = 'Stop'
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
@@ -13,7 +14,7 @@ $runtimeJar = Join-Path $repoRoot "app\libs\protobuf-javalite-$runtimeVersion.ja
 foreach ($required in @($protoSource, $runtimeJar)) {
     if (-not (Test-Path -LiteralPath $required -PathType Leaf)) { throw "Missing required file: $required" }
 }
-if (-not $Protoc) {
+if (-not $Remote -and -not $Protoc) {
     $artifacts = Join-Path $serverRootPath 'target\protobuf-maven-plugin'
     if (Test-Path -LiteralPath $artifacts) {
         $compiler = Get-ChildItem -LiteralPath $artifacts -Recurse -File -Filter 'protoc-*.exe' |
@@ -25,19 +26,43 @@ if (-not $Protoc) {
         if ($command) { $Protoc = $command.Source }
     }
 }
-if (-not $Protoc -or -not (Test-Path -LiteralPath $Protoc -PathType Leaf)) {
+if (-not $Remote -and (-not $Protoc -or -not (Test-Path -LiteralPath $Protoc -PathType Leaf))) {
     throw 'No protoc found. Run mvnw compile in the server first, or pass -Protoc / set PROTOC.'
 }
-$compilerVersion = (& $Protoc --version | Out-String).Trim()
-if ($LASTEXITCODE -ne 0 -or $compilerVersion -notmatch '^libprotoc (4\.)?36\.2$') {
-    throw "Expected protoc 36.2 for protobuf-javalite $runtimeVersion; received: $compilerVersion"
+if (-not $Remote) {
+    $compilerVersion = (& $Protoc --version | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0 -or $compilerVersion -notmatch '^libprotoc (4\.)?36\.2$') {
+        throw "Expected protoc 36.2 for protobuf-javalite $runtimeVersion; received: $compilerVersion"
+    }
 }
 
 # Generate outside the tracked source tree. Failed generation never deletes existing sources.
 $staging = Join-Path $repoRoot ('app\build\proto-sync\' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Force -Path $staging | Out-Null
-& $Protoc "--java_out=lite:$staging" "--proto_path=$protoRoot" quizgate.proto
+if ($Remote) {
+    # Explicit opt-in: only the shared public .proto is sent to the pinned Buf Java generator.
+    $buf = Join-Path $serverRootPath 'web\node_modules\.bin\buf.cmd'
+    if (-not (Test-Path -LiteralPath $buf)) { throw 'Run npm ci in the console checkout before using -Remote.' }
+    $template = @{version='v2'; plugins=@(@{remote='buf.build/protocolbuffers/java:v36.2';out=$staging;opt='lite'})} | ConvertTo-Json -Depth 5
+    $templatePath = Join-Path $staging 'buf.gen.json'
+    [IO.File]::WriteAllText($templatePath, $template)
+    $previousGoDebug = $env:GODEBUG
+    try {
+        $env:GODEBUG = 'http2client=0'
+        & $buf generate $protoRoot --template $templatePath
+        if ($LASTEXITCODE -ne 0) { throw 'Remote protobuf generation failed; tracked sources were not modified.' }
+    } finally { $env:GODEBUG = $previousGoDebug }
+} else {
+    & $Protoc "--java_out=lite:$staging" "--proto_path=$protoRoot" quizgate.proto
+}
 if ($LASTEXITCODE -ne 0) { throw 'Protobuf generation failed; tracked sources were not modified.' }
+# Buf descriptors explicitly carry json_name defaults that native protoc omits in Javadoc.
+# Canonicalize only those comment annotations, keeping native and remote output comparable.
+foreach ($generated in Get-ChildItem -LiteralPath $staging -Recurse -File -Filter '*.java') {
+    $source = [IO.File]::ReadAllText($generated.FullName)
+    $source = [regex]::Replace($source, '(?m)(^\s*\* <code>[^\r\n]*?) \[json_name = "[^"]+"\](?=;</code>)', '$1')
+    [IO.File]::WriteAllText($generated.FullName, $source)
+}
 $output = [IO.Path]::GetFullPath((Join-Path $repoRoot 'app\src\main\java-gen'))
 if (-not $output.StartsWith($repoRoot + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
     throw 'Generated source output must remain inside the Android repository.'

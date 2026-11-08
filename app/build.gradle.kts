@@ -11,8 +11,8 @@ android {
         applicationId = "com.quizgate.spike"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "0.1-spike"
+        versionCode = 5
+        versionName = "0.4-parent-approval"
     }
 
     buildFeatures {

@@ -31,6 +31,10 @@ data class GateHealth(
 private fun Boolean.bit(): Int = if (this) 1 else 0
 
 enum class GateEventKind {
+    GAME_WARNING,
+    GAME_EXTENDED,
+    GAME_FORCED,
+    GAME_WARNING_FAILED,
     ACCESSIBILITY_OFF,
     ACCESSIBILITY_RESTORED,
     OVERLAY_OFF,

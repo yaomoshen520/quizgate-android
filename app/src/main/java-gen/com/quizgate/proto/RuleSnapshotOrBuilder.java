@@ -64,4 +64,15 @@ public interface RuleSnapshotOrBuilder extends
    * @return The version.
    */
   long getVersion();
+
+  /**
+   * <code>.quizgate.GameModeRule game_mode = 7;</code>
+   * @return Whether the gameMode field is set.
+   */
+  boolean hasGameMode();
+  /**
+   * <code>.quizgate.GameModeRule game_mode = 7;</code>
+   * @return The gameMode.
+   */
+  com.quizgate.proto.GameModeRule getGameMode();
 }

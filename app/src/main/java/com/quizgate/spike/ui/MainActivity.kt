@@ -27,6 +27,7 @@ import com.quizgate.spike.net.ReportChannel
 import com.quizgate.spike.net.ReportState
 import com.quizgate.spike.util.SpikeLog
 import com.quizgate.spike.util.TriggerLedger
+import com.quizgate.spike.diagnostics.AppDiagnostics
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -60,6 +61,19 @@ class MainActivity : Activity() {
         identity = DeviceIdentity(applicationContext)
         reportState = ReportState(applicationContext)
         reporter = ReportChannel(applicationContext, events, settings, identity, reportState)
+        binding.appInventoryButton.setOnClickListener {
+            android.app.AlertDialog.Builder(this)
+                .setTitle("应用清单与家长规则")
+                .setMessage("同意后读取这台设备当前个人资料下可见的应用名称、包名和游戏分类，同步给已绑定的家长，用于选择受管控游戏；同时启用家长规则。不会读取游戏聊天或画面。应用清单约每 5 分钟刷新，前台状态随心跳上报。")
+                .setNegativeButton("暂不授权", null)
+                .setPositiveButton("同意并同步") { _, _ ->
+                    settings.inventoryConsent = true
+                    settings.followServerRule = true
+                    getSharedPreferences("app_inventory", MODE_PRIVATE).edit().remove("synced_at").apply()
+                    identity.requestRuleRefresh()
+                    reporter.tick(force = true)
+                }.show()
+        }
         // 家长哪怕一次都没进过无障碍设置，只要打开过一次首页，记账就得开始。
         GateWatchdogService.ensure(this)
         askNotificationPermission()
@@ -107,6 +121,7 @@ class MainActivity : Activity() {
             }
         }
         binding.refreshButton.setOnClickListener { render() }
+        binding.diagnosticsButton.setOnClickListener { showDiagnostics() }
         binding.modeButton.setOnClickListener {
             val next = settings.cycleTriggerMode()
             SpikeLog.record("抢屏方式切到 $next")
@@ -163,6 +178,43 @@ class MainActivity : Activity() {
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         handleCommand(intent)
+    }
+
+    private fun showDiagnostics() {
+        val text = TextView(this).apply {
+            text = AppDiagnostics.summary() + "\n\n日志仅保存在本机；手动导出可能包含排障用应用包名。"
+            textSize = 13f
+            setPadding(32, 24, 32, 24)
+            setTextIsSelectable(true)
+        }
+        android.app.AlertDialog.Builder(this)
+            .setTitle("本机日志与性能")
+            .setView(android.widget.ScrollView(this).apply { addView(text) })
+            .setNegativeButton("关闭", null)
+            .setNeutralButton("刷新") { _, _ -> showDiagnostics() }
+            .setPositiveButton("导出诊断文件") { _, _ ->
+                runCatching {
+                    startActivityForResult(Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                        addCategory(Intent.CATEGORY_OPENABLE)
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_TITLE, "quizgate-diagnostics-${System.currentTimeMillis()}.txt")
+                    }, REQUEST_DIAGNOSTICS_EXPORT)
+                }.onFailure {
+                    android.widget.Toast.makeText(this, "当前设备没有可用的文件保存器", android.widget.Toast.LENGTH_LONG).show()
+                }
+            }.show()
+    }
+
+    @Deprecated("Uses the platform document picker without an additional runtime dependency")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != REQUEST_DIAGNOSTICS_EXPORT || resultCode != RESULT_OK) return
+        val uri = data?.data ?: return
+        AppDiagnostics.export(applicationContext, uri) { success ->
+            if (!isDestroyed) android.widget.Toast.makeText(this,
+                if (success) "诊断文件已保存" else "导出未完成，请检查保存位置后重试",
+                android.widget.Toast.LENGTH_LONG).show()
+        }
     }
 
     /** adb 触发自检用：发完命令再从 adb 打开目标应用，自检就发生在目标应用前台期间。 */
@@ -224,6 +276,7 @@ class MainActivity : Activity() {
     }
 
     private fun render() {
+        binding.appInventoryButton.text = if (settings.inventoryConsent) "应用清单已授权 · 点击刷新" else "授权应用清单与家长规则"
         val service = GateAccessibilityService.instance
         renderHero(service)
         renderPermissions()
@@ -238,7 +291,8 @@ class MainActivity : Activity() {
         val thresholdMs = settings.thresholdMs
         val sessionMs = service?.currentSessionMs() ?: 0L
         val foreground = service?.currentForeground().orEmpty()
-        val tracking = service != null && settings.targetPackages.contains(foreground)
+        val tracking = service != null && foreground.isNotEmpty() && foreground != "无"
+        val waitingForParent = service?.waitingForParent() == true
 
         when {
             service == null -> {
@@ -246,12 +300,17 @@ class MainActivity : Activity() {
                 binding.statusText.setText(R.string.home_service_off_title)
                 binding.heroBody.setText(R.string.home_service_off_body)
             }
+            waitingForParent -> {
+                binding.heroKicker.text = "额外延期申请已提交"
+                binding.statusText.text = "等家长回复"
+                binding.heroBody.text = "等待审批期间可以继续玩，收到家长决定后按本轮规则执行。"
+            }
             tracking -> {
-                val remainMs = thresholdMs - sessionMs
+                val remainMs = service?.remainingMs() ?: (thresholdMs - sessionMs)
                 binding.heroKicker.text = "正在玩「${appLabel(foreground)}」"
                 binding.statusText.text = if (remainMs > 0) "还能玩 ${countdown(remainMs)}" else "该答题了"
                 binding.heroBody.text = if (remainMs > 0) {
-                    "已经玩了 ${describe(sessionMs)}，到 ${describe(thresholdMs)} 会出一道题。"
+                    "本轮已经玩了 ${describe(sessionMs)}，剩余时间用完后答题。"
                 } else {
                     "已经玩了 ${describe(sessionMs)}，这道题答完才能继续。"
                 }
@@ -271,8 +330,10 @@ class MainActivity : Activity() {
             binding.progressFill.layoutParams = weighted(binding.progressFill.layoutParams, fraction)
             binding.progressGap.layoutParams = weighted(binding.progressGap.layoutParams, 1f - fraction)
         }
-        binding.progressLabel.text = if (tracking) {
-            "本轮已玩 ${describe(sessionMs)} / 阈值 ${describe(thresholdMs)}"
+        binding.progressLabel.text = if(waitingForParent) {
+            "自主延期已用 ${service?.extensionsUsed() ?: 0} 次，等待家长审批"
+        } else if (tracking) {
+            "本轮已玩 ${describe(sessionMs)} / 初始时长 ${describe(thresholdMs)}"
         } else {
             "阈值 ${describe(thresholdMs)}，本轮还没开始"
         }
@@ -419,6 +480,7 @@ class MainActivity : Activity() {
 
         private const val REFRESH_MS = 1_000L
         private const val REQUEST_NOTIFICATIONS = 41
+        private const val REQUEST_DIAGNOSTICS_EXPORT = 42
         private const val SELF_TEST_ROUNDS = 10
         private const val SELF_TEST_START_DELAY_MS = 4_000L
         private const val RECENT_EVENTS = 4

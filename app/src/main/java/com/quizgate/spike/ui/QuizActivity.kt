@@ -17,6 +17,7 @@ class QuizActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        active = java.lang.ref.WeakReference(this)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         // Fullscreen 主题在这台机上会把状态栏/挖孔那一条留成黑色，让窗口按整屏布局铺过去。
         window.addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN)
@@ -65,12 +66,15 @@ class QuizActivity : Activity() {
     }
 
     override fun onDestroy() {
+        if(active?.get() === this) active=null
         panel?.close()
         panel = null
         super.onDestroy()
     }
 
     companion object {
+        private var active: java.lang.ref.WeakReference<QuizActivity>? = null
+        fun dismissForParentApproval() { active?.get()?.finish() }
         const val EXTRA_TRIGGER_AT = "trigger_at"
         const val EXTRA_PACKAGE = "package_under_quota"
         const val EXTRA_ROUND = "round"

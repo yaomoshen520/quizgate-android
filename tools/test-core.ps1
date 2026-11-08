@@ -27,7 +27,8 @@ Write-SourceList $protoList (Get-ChildItem (Join-Path $repoRoot 'app\src\main\ja
 if ($LASTEXITCODE -ne 0) { throw 'Protobuf compilation failed' }
 $sourceRoot = Join-Path $repoRoot 'app\src\main\java\com\quizgate\spike'
 $sources = @(Get-ChildItem (Join-Path $sourceRoot 'question') -Filter *.kt | ForEach-Object FullName)
-$sources += @('monitor\SessionTracker.kt','monitor\SessionStore.kt','monitor\GateHealth.kt',
+$sources += @(Get-ChildItem (Join-Path $sourceRoot 'diagnostics') -Filter *.kt | Where-Object Name -ne 'AppDiagnostics.kt' | ForEach-Object FullName)
+$sources += @('monitor\SessionTracker.kt','monitor\SessionStore.kt','monitor\CycleRule.kt','monitor\ParentExtension.kt','monitor\GateHealth.kt',
     'monitor\GateEventStore.kt','monitor\UsageEventStore.kt','net\ApiClient.kt','net\ReportPayloads.kt',
     'net\RemoteQuestionRepository.kt','net\UsageUploader.kt') | ForEach-Object { Join-Path $sourceRoot $_ }
 $tests = @(Get-ChildItem (Join-Path $repoRoot 'app\src\test') -Recurse -Filter *.kt)
