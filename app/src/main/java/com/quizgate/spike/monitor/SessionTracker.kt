@@ -38,6 +38,7 @@ class SessionTracker(
     var parentExtension: ParentExtension? = null
         private set
     val awaitingQuiz: Boolean get() = awaitingSinceMs != null
+    val hasGameCycle: Boolean get() = gameCycle
     val waitingForParent: Boolean get() = parentExtension?.stage == ParentExtension.Stage.PENDING
     val canRequestParent: Boolean get() = warningVisible && extensionsUsed >= maxExtensions &&
         (parentExtension == null || parentExtension?.stage == ParentExtension.Stage.FAILED)

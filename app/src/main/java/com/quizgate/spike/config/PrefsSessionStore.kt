@@ -49,7 +49,7 @@ class PrefsSessionStore(context: Context) : SessionStore {
         )
     }
 
-    override fun save(snapshot: SessionStore.Snapshot) {
+    override fun save(snapshot: SessionStore.Snapshot) = com.quizgate.spike.diagnostics.OperationMetrics.measure("session_save") {
         val rule = snapshot.cycleRule?.let {
             JSONObject().put("threshold", it.thresholdMs).put("watched", JSONArray(it.watchedPackages.toList()))
                 .put("grace", it.graceMs).put("enabled", it.enabled).put("version", it.version)

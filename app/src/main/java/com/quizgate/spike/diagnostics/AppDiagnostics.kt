@@ -25,6 +25,7 @@ object AppDiagnostics {
     private val pingPending = AtomicBoolean()
     private val exporting = AtomicBoolean()
     private val cpu = CpuSampler()
+    private val window = ResourceWindow()
     private val main = Handler(Looper.getMainLooper())
     private val processStartedAt = SystemClock.elapsedRealtime()
     @Volatile private var metadata = "诊断尚未初始化"
@@ -93,6 +94,7 @@ object AppDiagnostics {
         val runtime = Runtime.getRuntime()
         val heapMb = (runtime.totalMemory() - runtime.freeMemory()) / 1_048_576.0
         val pssMb = Debug.getPss() / 1_024.0
+        window.add(percent, pssMb, heapMb)
         val cpuText = percent?.let { String.format(Locale.US, "%.1f%%", it) } ?: "等待第二次采样"
         resourceSummary = String.format(Locale.US, "本进程 CPU：%s（单核口径）\nPSS：%.1f MiB；Java 堆已用：%.1f MiB\n采样时进程已运行：%d 秒",
             cpuText, pssMb, heapMb, (now - processStartedAt) / 1_000)
@@ -114,7 +116,7 @@ object AppDiagnostics {
 
     fun summary(): String = listOf(metadata, startupSummary, resourceSummary, mainSummary,
         "资源与主线程每 30 秒采样；主线程延迟不等同 ANR，不能据此计算游戏帧率。",
-        NetworkMetrics.process.summary(), exitsSummary, SpikeLog.health()).joinToString("\n\n")
+        window.summary(), OperationMetrics.summary(), NetworkMetrics.process.summary(), exitsSummary, SpikeLog.health()).joinToString("\n\n")
 
     /** Explicit user export only. A slow document provider never blocks the logger or sampler. */
     fun export(context: Context, destination: Uri, finished: (Boolean) -> Unit) {

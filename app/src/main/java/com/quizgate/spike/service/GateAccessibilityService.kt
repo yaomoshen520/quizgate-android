@@ -25,6 +25,7 @@ import com.quizgate.spike.util.TriggerLedger
 import java.io.File
 
 class GateAccessibilityService : AccessibilityService() {
+    fun blocksUpdateInstallation(): Boolean = tracker?.hasGameCycle == true || tracker?.awaitingQuiz == true || (::overlay.isInitialized && overlay.isShowing)
 
     private val handler = Handler(Looper.getMainLooper())
     private lateinit var settings: SpikeSettings

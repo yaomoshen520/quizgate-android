@@ -11,12 +11,14 @@ android {
         applicationId = "com.quizgate.spike"
         minSdk = 26
         targetSdk = 34
-        versionCode = 5
-        versionName = "0.4-parent-approval"
+        versionCode = providers.gradleProperty("quizgateVersionCode").orNull?.toInt() ?: 6
+        versionName = providers.gradleProperty("quizgateVersionName").orNull ?: "0.5-updates-diagnostics"
+        buildConfigField("String", "UPDATE_MANIFEST_URL", "\"" + (providers.gradleProperty("quizgateUpdateManifestUrl").orNull ?: "").replace("\\", "\\\\").replace("\"", "\\\"") + "\"")
     }
 
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
 
     compileOptions {
@@ -51,4 +53,5 @@ dependencies {
     // 而后端用的是同一份 javalite——版本必须对齐，否则 wire 格式两边对不上还没人报错。
     implementation(files("libs/protobuf-javalite-4.36.2.jar"))
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20240303")
 }

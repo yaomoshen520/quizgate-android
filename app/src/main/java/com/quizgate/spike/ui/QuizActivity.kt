@@ -74,6 +74,7 @@ class QuizActivity : Activity() {
 
     companion object {
         private var active: java.lang.ref.WeakReference<QuizActivity>? = null
+        fun blocksUpdateInstallation(): Boolean = active?.get()?.let { !it.isFinishing && !it.isDestroyed } == true
         fun dismissForParentApproval() { active?.get()?.finish() }
         const val EXTRA_TRIGGER_AT = "trigger_at"
         const val EXTRA_PACKAGE = "package_under_quota"

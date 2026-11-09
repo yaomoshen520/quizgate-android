@@ -549,6 +549,14 @@
                 android:layout_marginTop="@dimen/space_2"
                 android:text="本机日志与性能" />
 
+            <Button
+                android:id="@+id/updateButton"
+                style="@style/Button.Console"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_2"
+                android:text="手动检查整包更新" />
+
             <TextView
                 android:id="@+id/logText"
                 style="@style/Text.Mono"

@@ -6,8 +6,9 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <!-- 上报通道要出网。这一条是本应用唯一主动联网的理由：题目、时长、拆闸门记录都往自己的服务端发。 -->
+    <!-- 题目、时长与管控上报，以及用户手动发起的整包更新。 -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <!-- 家长管控的应用清单为核心功能；采集前另行取得用户明确同意。 -->
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
 
@@ -37,6 +38,8 @@
             android:launchMode="singleTop"
             android:taskAffinity=""
             android:theme="@style/QuizGateTheme.Seize" />
+        <activity android:name=".ui.UpdateActivity" android:exported="false" />
+        <provider android:name=".update.UpdateApkProvider" android:authorities="${applicationId}.updates" android:exported="false" android:grantUriPermissions="true" />
 
         <receiver
             android:name=".admin.QuizDeviceAdminReceiver"

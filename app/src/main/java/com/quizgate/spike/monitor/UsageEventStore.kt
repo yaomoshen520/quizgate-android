@@ -15,7 +15,7 @@ class UsageEventStore(private val file: File) {
 
     fun record(atMs: Long, appPackage: String, playedMs: Long = 0,
         correctCount: Int = 0, wrongCount: Int = 0, interceptionFailed: Boolean = false
-    ) = synchronized(lock) {
+    ) = com.quizgate.spike.diagnostics.OperationMetrics.measure("usage_record") { synchronized(lock) {
         require(playedMs >= 0 && correctCount >= 0 && wrongCount >= 0)
         if (playedMs == 0L && correctCount == 0 && wrongCount == 0 && !interceptionFailed) return@synchronized
         val event = UsageEvent.newBuilder().setEventId(UUID.randomUUID().toString())
@@ -28,7 +28,7 @@ class UsageEventStore(private val file: File) {
             it.write((encode(event) + "\n").toByteArray(Charsets.UTF_8))
             it.fd.sync()
         }
-    }
+    } }
 
     fun pending(limit: Int = 100): List<UsageEvent> = synchronized(lock) {
         recoverIncompleteTail()
@@ -37,7 +37,7 @@ class UsageEventStore(private val file: File) {
         }
     }
 
-    fun acknowledge(sent: List<UsageEvent>) = synchronized(lock) {
+    fun acknowledge(sent: List<UsageEvent>) = com.quizgate.spike.diagnostics.OperationMetrics.measure("usage_ack") { synchronized(lock) {
         if (!file.exists() || sent.isEmpty()) return@synchronized
         recoverIncompleteTail()
         val ids = sent.map { it.eventId }.toSet()
@@ -51,7 +51,7 @@ class UsageEventStore(private val file: File) {
         }
         Files.move(temp.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE,
             StandardCopyOption.REPLACE_EXISTING)
-    }
+    } }
 
     private fun encode(event: UsageEvent) = Base64.getEncoder().encodeToString(event.toByteArray())
     private fun decode(line: String) = UsageEvent.parseFrom(Base64.getDecoder().decode(line))

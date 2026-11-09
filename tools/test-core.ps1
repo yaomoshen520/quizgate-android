@@ -2,7 +2,8 @@ param(
     [Parameter(Mandatory = $true)][string]$JavaHome,
     [Parameter(Mandatory = $true)][string]$KotlinHome,
     [Parameter(Mandatory = $true)][string]$JunitJar,
-    [Parameter(Mandatory = $true)][string]$HamcrestJar
+    [Parameter(Mandatory = $true)][string]$HamcrestJar,
+    [string]$JsonJar
 )
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path $PSScriptRoot -Parent
@@ -15,7 +16,12 @@ $java = Join-Path $JavaHome 'bin\java.exe'
 $javac = Join-Path $JavaHome 'bin\javac.exe'
 $kotlinLib = Join-Path $KotlinHome 'lib'
 $protoJar = Join-Path $repoRoot 'app\libs\protobuf-javalite-4.36.2.jar'
-foreach ($required in @($java,$javac,$protoJar,$JunitJar,$HamcrestJar,(Join-Path $kotlinLib 'kotlin-compiler.jar'))) {
+if (-not $JsonJar) {
+    $cacheRoot = if ($env:GRADLE_USER_HOME) { $env:GRADLE_USER_HOME } else { Join-Path $env:USERPROFILE '.gradle' }
+    $JsonJar = Get-ChildItem -LiteralPath (Join-Path $cacheRoot 'caches/modules-2/files-2.1/org.json/json/20240303') -Recurse -Filter '*.jar' -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName
+}
+if (-not $JsonJar) { throw 'Pass -JsonJar pointing to org.json:json:20240303 (test-only dependency), or first run the Gradle unit tests.' }
+foreach ($required in @($java,$javac,$protoJar,$JunitJar,$HamcrestJar,$JsonJar,(Join-Path $kotlinLib 'kotlin-compiler.jar'))) {
     if (-not (Test-Path -LiteralPath $required)) { throw "Missing dependency: $required" }
 }
 function Write-SourceList($path, $sources) {
@@ -28,6 +34,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Protobuf compilation failed' }
 $sourceRoot = Join-Path $repoRoot 'app\src\main\java\com\quizgate\spike'
 $sources = @(Get-ChildItem (Join-Path $sourceRoot 'question') -Filter *.kt | ForEach-Object FullName)
 $sources += @(Get-ChildItem (Join-Path $sourceRoot 'diagnostics') -Filter *.kt | Where-Object Name -ne 'AppDiagnostics.kt' | ForEach-Object FullName)
+$sources += @('UpdatePolicy.kt','ManifestParser.kt','UpdateTransfer.kt') | ForEach-Object { Join-Path (Join-Path $sourceRoot 'update') $_ }
 $sources += @('monitor\SessionTracker.kt','monitor\SessionStore.kt','monitor\CycleRule.kt','monitor\ParentExtension.kt','monitor\GateHealth.kt',
     'monitor\GateEventStore.kt','monitor\UsageEventStore.kt','net\ApiClient.kt','net\ReportPayloads.kt',
     'net\RemoteQuestionRepository.kt','net\UsageUploader.kt') | ForEach-Object { Join-Path $sourceRoot $_ }
@@ -35,7 +42,7 @@ $tests = @(Get-ChildItem (Join-Path $repoRoot 'app\src\test') -Recurse -Filter *
 $sources += $tests | ForEach-Object FullName
 $kotlinList = Join-Path $buildRoot 'kotlin-sources.txt'
 Write-SourceList $kotlinList $sources
-$classpath = @($protoClasses,$protoJar,(Join-Path $kotlinLib 'kotlin-stdlib.jar'),$JunitJar,$HamcrestJar) -join ';'
+$classpath = @($protoClasses,$protoJar,(Join-Path $kotlinLib 'kotlin-stdlib.jar'),$JunitJar,$HamcrestJar,$JsonJar) -join ';'
 & $java -cp "$kotlinLib\*" org.jetbrains.kotlin.cli.jvm.K2JVMCompiler -jvm-target 17 -no-stdlib -no-reflect -classpath $classpath -d $testClasses "@$kotlinList"
 if ($LASTEXITCODE -ne 0) { throw 'Kotlin compilation failed' }
 $testNames = $tests | ForEach-Object {

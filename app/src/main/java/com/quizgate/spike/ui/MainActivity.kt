@@ -43,10 +43,13 @@ class MainActivity : Activity() {
     private lateinit var identity: DeviceIdentity
     private lateinit var reportState: ReportState
     private lateinit var reporter: ReportChannel
+    private val labelCache = object : LinkedHashMap<String, Pair<Long, String>>(32, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Pair<Long, String>>?): Boolean = size > 32
+    }
 
     private val refresher = object : Runnable {
         override fun run() {
-            render()
+            com.quizgate.spike.diagnostics.OperationMetrics.measure("home_render") { render() }
             handler.postDelayed(this, REFRESH_MS)
         }
     }
@@ -122,6 +125,7 @@ class MainActivity : Activity() {
         }
         binding.refreshButton.setOnClickListener { render() }
         binding.diagnosticsButton.setOnClickListener { showDiagnostics() }
+        binding.updateButton.setOnClickListener { startActivity(Intent(this, UpdateActivity::class.java)) }
         binding.modeButton.setOnClickListener {
             val next = settings.cycleTriggerMode()
             SpikeLog.record("抢屏方式切到 $next")
@@ -225,6 +229,7 @@ class MainActivity : Activity() {
         }
         SpikeLog.record("收到命令 $command")
         when (command) {
+            "updates" -> if (com.quizgate.spike.BuildConfig.DEBUG) startActivity(Intent(this, UpdateActivity::class.java))
             COMMAND_SET_MODE -> {
                 val name = intent.getStringExtra(EXTRA_MODE) ?: return
                 val mode = runCatching { TriggerMode.valueOf(name) }
@@ -252,6 +257,7 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        labelCache.clear()
         handler.post(refresher)
     }
 
@@ -459,10 +465,15 @@ class MainActivity : Activity() {
         return lp
     }
 
-    private fun appLabel(packageName: String): String = runCatching {
-        val info = packageManager.getApplicationInfo(packageName, 0)
-        packageManager.getApplicationLabel(info).toString()
-    }.getOrDefault(packageName)
+    private fun appLabel(packageName: String): String {
+        val now = android.os.SystemClock.uptimeMillis()
+        labelCache[packageName]?.takeIf { now - it.first in 0..60_000 }?.let { return it.second }
+        val label = com.quizgate.spike.diagnostics.OperationMetrics.measure("app_label") {
+            runCatching { packageManager.getApplicationLabel(packageManager.getApplicationInfo(packageName, 0)).toString() }.getOrDefault(packageName)
+        }
+        labelCache[packageName] = now to label
+        return label
+    }
 
     /** 大数读法：30 分钟以内说"几分几秒"，整分钟就省掉秒。 */
     private fun describe(ms: Long): String {
