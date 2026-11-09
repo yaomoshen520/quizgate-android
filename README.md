@@ -4,6 +4,9 @@
 Kotlin + XML 布局（无 Compose），`applicationId = com.quizgate.spike`，minSdk 26 / targetSdk 34。
 
 服务端：https://github.com/yaomoshen520/quizgate-server · 家长后台：https://github.com/yaomoshen520/quizgate-console
+iOS 孩子端：https://github.com/yaomoshen520/quizgate-ios · 鸿蒙孩子端：https://github.com/yaomoshen520/quizgate-harmony
+
+一个仓库一个客户端：iOS 与鸿蒙的代码不再寄在本仓库的分支里。
 
 ## 为什么是悬浮窗
 
