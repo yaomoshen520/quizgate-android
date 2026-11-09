@@ -3,3 +3,4 @@
 *.kts text eol=lf
 *.xml text eol=lf
 *.proto text eol=lf
+app/src/main/java-gen/** -whitespace

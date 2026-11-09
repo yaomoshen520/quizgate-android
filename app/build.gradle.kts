@@ -11,8 +11,8 @@ android {
         applicationId = "com.quizgate.spike"
         minSdk = 26
         targetSdk = 34
-        versionCode = providers.gradleProperty("quizgateVersionCode").orNull?.toInt() ?: 6
-        versionName = providers.gradleProperty("quizgateVersionName").orNull ?: "0.5-updates-diagnostics"
+        versionCode = providers.gradleProperty("quizgateVersionCode").orNull?.toInt() ?: 7
+        versionName = providers.gradleProperty("quizgateVersionName").orNull ?: "0.6-client-hardening"
         buildConfigField("String", "UPDATE_MANIFEST_URL", "\"" + (providers.gradleProperty("quizgateUpdateManifestUrl").orNull ?: "").replace("\\", "\\\\").replace("\"", "\\\"") + "\"")
     }
 

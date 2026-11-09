@@ -15,6 +15,7 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.quizgate.spike.R
+import com.quizgate.spike.BuildConfig
 import com.quizgate.spike.config.SpikeSettings
 import com.quizgate.spike.config.TriggerMode
 import com.quizgate.spike.databinding.ActivityMainBinding
@@ -83,8 +84,17 @@ class MainActivity : Activity() {
 
         // 会改变闸门行为的开关一律收进长按才出现的实验台，界面上不留两个键就能放行的洞。
         binding.titleBlock.setOnLongClickListener {
+            if (!BuildConfig.DEBUG) return@setOnLongClickListener false
             toggleConsole()
             true
+        }
+        binding.titleBlock.isLongClickable = BuildConfig.DEBUG
+        binding.consoleChevron.visibility = if (BuildConfig.DEBUG) View.VISIBLE else View.GONE
+        binding.maintenanceButton.setOnClickListener {
+            android.app.AlertDialog.Builder(this).setTitle(R.string.maintenance_title)
+                .setItems(arrayOf(getString(R.string.diagnostics_title), getString(R.string.manual_update_title))) { _, which ->
+                    if (which == 0) showDiagnostics() else startActivity(Intent(this, UpdateActivity::class.java))
+                }.setNegativeButton(android.R.string.cancel, null).show()
         }
         binding.openAccessibilityButton.setOnClickListener {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
@@ -110,12 +120,14 @@ class MainActivity : Activity() {
             )
         }
         binding.toggleThresholdButton.setOnClickListener {
+            if (!BuildConfig.DEBUG) return@setOnClickListener
             settings.toggleThreshold()
             GateAccessibilityService.instance?.rebuildTracker()
             SpikeLog.record("阈值切到 ${describe(settings.thresholdMs)}，计时重新开始")
             render()
         }
         binding.selfTestButton.setOnClickListener {
+            if (!BuildConfig.DEBUG) return@setOnClickListener
             val service = GateAccessibilityService.instance
             if (service == null) {
                 SpikeLog.record("无障碍服务没开，无法自检")
@@ -127,11 +139,13 @@ class MainActivity : Activity() {
         binding.diagnosticsButton.setOnClickListener { showDiagnostics() }
         binding.updateButton.setOnClickListener { startActivity(Intent(this, UpdateActivity::class.java)) }
         binding.modeButton.setOnClickListener {
+            if (!BuildConfig.DEBUG) return@setOnClickListener
             val next = settings.cycleTriggerMode()
             SpikeLog.record("抢屏方式切到 $next")
             render()
         }
         binding.controlButton.setOnClickListener {
+            if (!BuildConfig.DEBUG) return@setOnClickListener
             SpikeLog.record("对照组：从本应用前台直接打开答题页")
             startActivity(Intent(this, QuizActivity::class.java).apply {
                 putExtra(QuizActivity.EXTRA_PACKAGE, "control")
@@ -139,6 +153,7 @@ class MainActivity : Activity() {
             })
         }
         binding.saveServerButton.setOnClickListener {
+            if (!BuildConfig.DEBUG) return@setOnClickListener
             settings.serverBaseUrl = binding.serverUrlInput.text.toString()
             // 改地址之后旧令牌属于旧服务端，留着只会一直 401。作废它，下一轮重新登记。
             identity.forgetToken()
@@ -153,6 +168,7 @@ class MainActivity : Activity() {
             handler.postDelayed({ render() }, REPORT_PREVIEW_DELAY_MS)
         }
         binding.toggleFollowButton.setOnClickListener {
+            if (!BuildConfig.DEBUG) return@setOnClickListener
             settings.followServerRule = !settings.followServerRule
             if (settings.followServerRule) {
                 // Earlier heartbeats may have received this version without applying it.
@@ -170,6 +186,7 @@ class MainActivity : Activity() {
             render()
         }
         binding.toggleReportingButton.setOnClickListener {
+            if (!BuildConfig.DEBUG) return@setOnClickListener
             settings.reportingEnabled = !settings.reportingEnabled
             SpikeLog.record(
                 if (settings.reportingEnabled) "联网上报已打开" else "联网上报已关闭：事件照样落盘，只是不发"
@@ -223,6 +240,7 @@ class MainActivity : Activity() {
 
     /** adb 触发自检用：发完命令再从 adb 打开目标应用，自检就发生在目标应用前台期间。 */
     private fun handleCommand(intent: Intent?) {
+        if (!BuildConfig.DEBUG) return
         val command = intent?.getStringExtra(EXTRA_COMMAND)
         if (command == null) {
             return
@@ -275,7 +293,7 @@ class MainActivity : Activity() {
     }
 
     private fun showConsole(open: Boolean) {
-        binding.consolePanel.visibility = if (open) View.VISIBLE else View.GONE
+        binding.consolePanel.visibility = if (open && BuildConfig.DEBUG) View.VISIBLE else View.GONE
         binding.consoleChevron.setText(
             if (open) R.string.console_chevron_open else R.string.console_chevron_closed
         )

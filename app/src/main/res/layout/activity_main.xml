@@ -70,6 +70,12 @@
         </LinearLayout>
 
         <Button
+            android:id="@+id/maintenanceButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/maintenance_title" />
+
+        <Button
             android:id="@+id/appInventoryButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

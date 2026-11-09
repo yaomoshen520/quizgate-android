@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="maintenance_title">诊断与更新</string>
+    <string name="diagnostics_title">本机日志与性能</string>
+    <string name="manual_update_title">手动检查整包更新</string>
 
     <string name="app_name">学习闸门</string>
     <string name="app_subtitle">玩够时间，先答一道题</string>

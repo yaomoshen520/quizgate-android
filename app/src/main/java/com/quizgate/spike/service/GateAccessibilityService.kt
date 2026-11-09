@@ -164,6 +164,7 @@ class GateAccessibilityService : AccessibilityService() {
     }
 
     fun startSelfTest(rounds: Int) {
+        if (!com.quizgate.spike.BuildConfig.DEBUG) return
         SpikeLog.record("抢屏自检开始：$rounds 轮，方式 ${settings.triggerMode}")
         for (index in 0 until rounds) {
             handler.postDelayed({ fire(SELF_TEST_PACKAGE, "self-test") }, index * SELF_TEST_INTERVAL_MS)
@@ -268,6 +269,7 @@ class GateAccessibilityService : AccessibilityService() {
      * 所以改成往应用私有目录写一个文件，服务每 2 秒读一次。
      */
     private fun pollCommandFile() {
+        if (!com.quizgate.spike.BuildConfig.DEBUG) return
         val file = File(filesDir, "cmd.txt")
         if (!file.exists()) {
             return
